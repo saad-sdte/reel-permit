@@ -29,6 +29,10 @@ export const metadata: Metadata = {
     type: "website",
     siteName: "ReelPermit",
   },
+  icons: {
+    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
+    apple: [{ url: "/apple-icon" }],
+  },
   robots: { index: false, follow: false },
 };
 
