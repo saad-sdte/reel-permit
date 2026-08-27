@@ -456,7 +456,7 @@ export function contactNotificationEmail(msg: ContactMessage): {
 
   const bodyHtml = `
     <h1 style="margin:0;font-size:20px;color:${BRAND.navy};">New support message</h1>
-    <p style="margin:10px 0 0;font-size:14px;color:${BRAND.slate600};">Sent from the contact form on reelpermit.local. Reply to this email to answer ${esc(msg.name.split(" ")[0] || "the customer")} directly.</p>
+    <p style="margin:10px 0 0;font-size:14px;color:${BRAND.slate600};">Sent from the contact form on reelpermit.com. Reply to this email to answer ${esc(msg.name.split(" ")[0] || "the customer")} directly.</p>
     ${detailCard(rows, { heading: "From" })}
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:18px 0 0;border:1px solid ${BRAND.slate200};border-radius:12px;">
       <tr><td style="padding:18px 22px;">

@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
-
-const SUPPORT_EMAIL = "support@reelpermit.local";
+import { SUPPORT_EMAIL, SUPPORT_MAILTO } from "@/lib/contact";
 
 export function LegalContactBlock({ emailNote }: { emailNote?: ReactNode }) {
   return (
@@ -10,7 +9,7 @@ export function LegalContactBlock({ emailNote }: { emailNote?: ReactNode }) {
       </p>
       <p className="mt-2">
         <span className="font-semibold text-navy">Email:</span>{" "}
-        <a href={`mailto:${SUPPORT_EMAIL}`} className="font-semibold text-copper underline">
+        <a href={SUPPORT_MAILTO} className="font-semibold text-copper underline">
           {SUPPORT_EMAIL}
         </a>
         {emailNote ? <> {emailNote}</> : null}

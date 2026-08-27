@@ -192,7 +192,7 @@ export async function GET(request: Request) {
       subject: `[TEST] ${tpl.subject}`,
       html: tpl.html,
       text: tpl.text,
-      replyTo: process.env.SUPPORT_REPLY_TO ?? "support@reelpermit.local",
+      replyTo: process.env.SUPPORT_REPLY_TO ?? "support@reelpermit.com",
       tag: "template-test",
     });
     return NextResponse.json({ ok: result.delivered, id: result.id, error: result.error });

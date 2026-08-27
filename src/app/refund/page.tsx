@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { LegalContactBlock } from "@/components/LegalContactBlock";
+import { SUPPORT_EMAIL, SUPPORT_MAILTO } from "@/lib/contact";
 
 export const metadata: Metadata = {
   title: "Refund Policy",
@@ -181,10 +182,10 @@ export default function RefundPage() {
             <p className="mt-3">
               Email{" "}
               <a
-                href="mailto:support@reelpermit.local"
+                href={SUPPORT_MAILTO}
                 className="font-medium text-forest-700 underline"
               >
-                support@reelpermit.local
+                {SUPPORT_EMAIL}
               </a>{" "}
               with:
             </p>

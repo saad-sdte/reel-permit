@@ -5,6 +5,7 @@ import { CheckCircle2, Send } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input, Textarea } from "@/components/ui/Input";
+import { SUPPORT_EMAIL } from "@/lib/contact";
 
 /**
  * Contact form — submits to /api/contact, which emails the support team and
@@ -55,12 +56,12 @@ export function ContactForm() {
       setError(
         firstFieldError ??
           json.message ??
-          "We couldn't send your message. Please try again, or email support@reelpermit.local.",
+          `We couldn't send your message. Please try again, or email ${SUPPORT_EMAIL}.`,
       );
       setStatus("idle");
     } catch {
       setError(
-        "We couldn't reach the server. Check your connection and try again, or email support@reelpermit.local.",
+        `We couldn't reach the server. Check your connection and try again, or email ${SUPPORT_EMAIL}.`,
       );
       setStatus("idle");
     }

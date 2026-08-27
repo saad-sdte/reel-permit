@@ -33,7 +33,7 @@ export const FONT_STACK =
 export const BUSINESS = {
   legalName: process.env.BUSINESS_LEGAL_NAME ?? "ReelPermit",
   address: process.env.BUSINESS_ADDRESS ?? "5900 Balcones Dr Ste 100, Austin, TX 78731",
-  supportEmail: process.env.SUPPORT_EMAIL ?? "support@reelpermit.local",
+  supportEmail: process.env.SUPPORT_EMAIL ?? "support@reelpermit.com",
   supportPhone: process.env.SUPPORT_PHONE ?? "",
 } as const;
 
@@ -243,7 +243,7 @@ export function emailShell({
           <p style="margin:12px 0 0;font-size:11px;line-height:1.6;color:${BRAND.slate500};">${esc(BUSINESS.legalName)} · <a href="mailto:${esc(BUSINESS.supportEmail)}" style="color:${BRAND.slate500};text-decoration:none;">${esc(BUSINESS.supportEmail)}</a></p>
           ${referenceHtml}
           ${pauseHtml}
-          <p style="margin:12px 0 0;font-size:11px;color:${BRAND.slate500};">© ${year} ReelPermit · <a href="${utmLink("/", campaign)}" style="color:${BRAND.slate500};">reelpermit.local</a> · <a href="${utmLink("/terms", campaign)}" style="color:${BRAND.slate500};">Terms</a> · <a href="${utmLink("/privacy", campaign)}" style="color:${BRAND.slate500};">Privacy</a> · <a href="${utmLink("/refund", campaign)}" style="color:${BRAND.slate500};">Refund policy</a> · <a href="${utmLink("/contact", campaign)}" style="color:${BRAND.slate500};">Contact</a></p>
+          <p style="margin:12px 0 0;font-size:11px;color:${BRAND.slate500};">© ${year} ReelPermit · <a href="${utmLink("/", campaign)}" style="color:${BRAND.slate500};">reelpermit.com</a> · <a href="${utmLink("/terms", campaign)}" style="color:${BRAND.slate500};">Terms</a> · <a href="${utmLink("/privacy", campaign)}" style="color:${BRAND.slate500};">Privacy</a> · <a href="${utmLink("/refund", campaign)}" style="color:${BRAND.slate500};">Refund policy</a> · <a href="${utmLink("/contact", campaign)}" style="color:${BRAND.slate500};">Contact</a></p>
         </td></tr>
 
       </table>

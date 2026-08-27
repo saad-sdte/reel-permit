@@ -8,6 +8,7 @@ import { PaymentStep } from "@/components/PaymentStep";
 import { PurchaseConversionBeacon } from "@/components/PurchaseConversionBeacon";
 import { Card } from "@/components/ui/Card";
 import { buttonClasses } from "@/components/ui/Button";
+import { SUPPORT_EMAIL, SUPPORT_MAILTO } from "@/lib/contact";
 
 /**
  * Client half of /pay/{token}: reuses the exact PaymentStep from the main
@@ -98,10 +99,10 @@ export function RetryCheckout({
             business day.
           </p>
           <p className="mt-6 text-sm text-slate-500">
-            You can close this page. Questions?{" "}
-            <Link href="/contact" className="font-semibold text-forest-700 underline">
-              Contact support
-            </Link>
+            You can close this page. Questions? Email{" "}
+            <a href={SUPPORT_MAILTO} className="font-semibold text-forest-700 underline">
+              {SUPPORT_EMAIL}
+            </a>
             .
           </p>
         </div>

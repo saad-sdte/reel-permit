@@ -8,6 +8,7 @@ import { Menu, X } from "lucide-react";
 import { buttonClasses } from "@/components/ui/Button";
 import { Logo } from "@/components/Logo";
 import { LanguageToggle } from "@/components/LanguageToggle";
+import { SUPPORT_EMAIL, SUPPORT_MAILTO } from "@/lib/contact";
 import { useLocale, withLocalePrefix } from "@/i18n/LocaleProvider";
 
 export function Header() {
@@ -56,6 +57,12 @@ export function Header() {
         </nav>
 
         <div className="flex shrink-0 items-center gap-2">
+          <a
+            href={SUPPORT_MAILTO}
+            className="hidden text-sm font-medium text-ink/70 hover:text-ink lg:inline"
+          >
+            {SUPPORT_EMAIL}
+          </a>
           <LanguageToggle tone="light" className="hidden sm:inline-flex" />
           <Link href={hrefFor("/apply")} className={`${buttonClasses("primary", "md")} hidden sm:inline-flex`}>
             Get licensed
@@ -93,6 +100,9 @@ export function Header() {
                   {link.label}
                 </Link>
               ))}
+              <a href={SUPPORT_MAILTO} className="py-2 text-sm font-medium text-ink" onClick={() => setOpen(false)}>
+                {SUPPORT_EMAIL}
+              </a>
               <Link
                 href={hrefFor("/apply")}
                 className={`${buttonClasses("primary", "md")} mt-2`}

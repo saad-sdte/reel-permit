@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { LegalContactBlock } from "@/components/LegalContactBlock";
+import { SUPPORT_EMAIL, SUPPORT_MAILTO } from "@/lib/contact";
 
 export const metadata: Metadata = {
   title: "Privacy Policy",
@@ -280,10 +281,10 @@ export default function PrivacyPage() {
             <p className="mt-3">
               To exercise any of these rights, email{" "}
               <a
-                href="mailto:support@reelpermit.local"
+                href={SUPPORT_MAILTO}
                 className="font-medium text-forest-700 underline"
               >
-                support@reelpermit.local
+                {SUPPORT_EMAIL}
               </a>{" "}
               with the subject line &ldquo;Privacy request&rdquo; from the email address on
               your application. We may need to verify your identity before acting on a

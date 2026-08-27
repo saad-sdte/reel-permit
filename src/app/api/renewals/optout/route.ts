@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { dbConfigured, q } from "@/lib/db";
+import { SUPPORT_EMAIL } from "@/lib/contact";
 
 export const runtime = "nodejs";
 
@@ -52,7 +53,7 @@ export async function GET(request: Request) {
   const sig = url.searchParams.get("sig") ?? "";
   if (!ref || !sigOk(ref, sig)) {
     return page(`<h1 style="font-size:20px;color:#0A2540;">This link isn't valid</h1>
-      <p style="color:#475569;line-height:1.6;">If you're still receiving emails you don't want, write to support@reelpermit.local and we'll take care of it.</p>`);
+      <p style="color:#475569;line-height:1.6;">If you're still receiving emails you don't want, write to ${SUPPORT_EMAIL} and we'll take care of it.</p>`);
   }
   return page(`<h1 style="font-size:20px;color:#0A2540;">Stop renewal reminders?</h1>
     <p style="color:#475569;line-height:1.6;">We'll stop sending license-renewal reminders for <strong style="font-family:monospace;">${ref.replace(/[^A-Za-z0-9-]/g, "")}</strong>. Receipts and essential emails are unaffected.</p>

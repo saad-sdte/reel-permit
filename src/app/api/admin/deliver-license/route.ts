@@ -173,7 +173,7 @@ export async function POST(request: Request) {
         html: opsTpl.html,
         text: opsTpl.text,
         attachments,
-        replyTo: process.env.SUPPORT_REPLY_TO ?? "support@reelpermit.local",
+        replyTo: process.env.SUPPORT_REPLY_TO ?? "support@reelpermit.com",
         tag: "ops-license-delivered",
       });
     }

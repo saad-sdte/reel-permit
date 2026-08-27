@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { NON_AFFILIATION_DISCLAIMER } from "@/components/ui/DisclaimerBanner";
 import { Logo } from "@/components/Logo";
+import { SUPPORT_EMAIL, SUPPORT_MAILTO } from "@/lib/contact";
 import { useLocale, withLocalePrefix } from "@/i18n/LocaleProvider";
 
 export function Footer() {
@@ -31,6 +32,12 @@ export function Footer() {
         <p className="mt-3 max-w-xl text-sm text-white/70">
           A private desk that files Michigan fishing licenses on the official MDNR portal.
           You get the state-issued document — we handle the paperwork.
+        </p>
+        <p className="mt-4 text-sm text-white/80">
+          Support:{" "}
+          <a href={SUPPORT_MAILTO} className="font-semibold text-gold-400 underline-offset-2 hover:underline">
+            {SUPPORT_EMAIL}
+          </a>
         </p>
         <nav className="mt-8 flex flex-wrap gap-x-5 gap-y-2 text-sm">
           {links.map((link) => (

@@ -6,6 +6,7 @@ import { formatPrice } from "@/lib/format";
 import { displayPrice } from "@/lib/state-config";
 import { HeroSection } from "@/components/motion/HeroSection";
 import { LicenseCards } from "@/components/motion/LicenseCards";
+import { SUPPORT_EMAIL, SUPPORT_MAILTO } from "@/lib/contact";
 
 const FEATURED = [
   {
@@ -133,7 +134,11 @@ export function Landing() {
           <div>
             <h2 className="font-display text-3xl text-white">Ready to fish Michigan?</h2>
             <p className="mt-2 max-w-xl text-white/70">
-              Independent service — not MDNR. You can always buy the same license on the{" "}
+              Independent service — not MDNR. Questions:{" "}
+              <a href={SUPPORT_MAILTO} className="underline underline-offset-2">
+                {SUPPORT_EMAIL}
+              </a>
+              . You can always buy the same license on the{" "}
               <Link href="/official-sites" className="underline underline-offset-2">
                 official state site
               </Link>

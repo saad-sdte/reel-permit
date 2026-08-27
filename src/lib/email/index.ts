@@ -65,18 +65,18 @@ export {
  *   RESEND_API_KEY               — Resend secret key (required in production)
  *   ADMIN_EMAIL                  — where order/contact notifications go;
  *                                  comma-separate for multiple recipients
- *   EMAIL_FROM                   — orders sender    (default: ReelPermit <orders@reelpermit.local>)
- *   EMAIL_FROM_SUPPORT           — support sender  (default: ReelPermit Support <support@reelpermit.local>)
- *   EMAIL_FROM_LICENSES          — license sender  (default: ReelPermit <licenses@reelpermit.local>)
- *   SUPPORT_REPLY_TO             — reply-to on customer emails (default: support@reelpermit.local)
+ *   EMAIL_FROM                   — orders sender    (default: ReelPermit <orders@reelpermit.com>)
+ *   EMAIL_FROM_SUPPORT           — support sender  (default: ReelPermit Support <support@reelpermit.com>)
+ *   EMAIL_FROM_LICENSES          — license sender  (default: ReelPermit <licenses@reelpermit.com>)
+ *   SUPPORT_REPLY_TO             — reply-to on customer emails (default: support@reelpermit.com)
  *   ADMIN_EMAIL_INCLUDE_FULL_SSN — "true" to include unmasked SSN in admin order emails
  */
 
 const DEFAULTS = {
-  from: "ReelPermit <orders@reelpermit.local>",
-  fromSupport: "ReelPermit Support <support@reelpermit.local>",
-  fromLicenses: "ReelPermit <licenses@reelpermit.local>",
-  replyTo: "support@reelpermit.local",
+  from: "ReelPermit <orders@reelpermit.com>",
+  fromSupport: "ReelPermit Support <support@reelpermit.com>",
+  fromLicenses: "ReelPermit <licenses@reelpermit.com>",
+  replyTo: "support@reelpermit.com",
 } as const;
 
 function env(name: string): string | undefined {

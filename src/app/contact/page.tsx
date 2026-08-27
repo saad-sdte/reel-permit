@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { InnerPage } from "@/components/InnerPage";
 import { ContactForm } from "@/components/ContactForm";
+import { SUPPORT_EMAIL, SUPPORT_MAILTO } from "@/lib/contact";
 
 export const metadata: Metadata = {
   title: "Contact",
@@ -20,8 +21,8 @@ export default function ContactPage() {
       </div>
       <p className="mt-8 text-sm text-ink/60">
         Or{" "}
-        <a href="mailto:support@reelpermit.local" className="font-semibold text-copper underline">
-          support@reelpermit.local
+        <a href={SUPPORT_MAILTO} className="font-semibold text-copper underline">
+          {SUPPORT_EMAIL}
         </a>
         .{" "}
         <Link href="/faq" className="underline">

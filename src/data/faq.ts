@@ -61,7 +61,7 @@ export const FAQ_ITEMS: FaqItem[] = [
   {
     question: "What if I make a mistake on my application?",
     answer:
-      "Contact us as soon as possible with your reference number. If we have not yet purchased your license, we will correct the application at no charge. If the license has already been purchased, we will work with you and the state agency on available options.",
+      "Contact us as soon as possible at support@reelpermit.com with your reference number. If we have not yet purchased your license, we will correct the application at no charge. If the license has already been purchased, we will work with you and the state agency on available options.",
   },
   {
     question: "How will my license be delivered?",
@@ -72,5 +72,10 @@ export const FAQ_ITEMS: FaqItem[] = [
     question: "Is ReelPermit a government agency?",
     answer:
       "No. We are a private company. We are not affiliated with, endorsed by, or operated by any government agency, and we never represent ourselves as one. Our role is limited to assisting you with the application and purchasing process.",
+  },
+  {
+    question: "How do I contact ReelPermit?",
+    answer:
+      "Email support@reelpermit.com. Include your RP- reference if you already applied. Do not send a full Social Security number or card number by email.",
   },
 ];

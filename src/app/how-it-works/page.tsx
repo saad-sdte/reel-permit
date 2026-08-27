@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { InnerPage } from "@/components/InnerPage";
 import { buttonClasses } from "@/components/ui/Button";
+import { SUPPORT_EMAIL, SUPPORT_MAILTO } from "@/lib/contact";
 
 export const metadata: Metadata = {
   title: "How it works",
@@ -25,7 +26,10 @@ export default function HowItWorksPage() {
       </ol>
       <p className="mt-10 text-sm text-ink/60">
         Independent service. Not MDNR. Licenses are also sold on the state site, usually cheaper if you
-        file yourself.
+        file yourself.{" "}
+        <a href={SUPPORT_MAILTO} className="font-semibold text-copper underline">
+          {SUPPORT_EMAIL}
+        </a>
       </p>
       <Link href="/apply" className={`${buttonClasses("primary", "lg")} mt-8`}>
         Start application

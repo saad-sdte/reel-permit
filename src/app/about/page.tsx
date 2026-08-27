@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { InnerPage } from "@/components/InnerPage";
 import { buttonClasses } from "@/components/ui/Button";
+import { SUPPORT_EMAIL, SUPPORT_MAILTO } from "@/lib/contact";
 
 export const metadata: Metadata = {
   title: "About",
@@ -18,6 +19,13 @@ export default function AboutPage() {
       <p className="mt-6 leading-relaxed">
         We do not issue licenses. The State of Michigan does. We are not affiliated with MDNR. The
         price you pay includes the state license plus our filing fee.
+      </p>
+      <p className="mt-6 leading-relaxed">
+        Questions:{" "}
+        <a href={SUPPORT_MAILTO} className="font-semibold text-copper underline">
+          {SUPPORT_EMAIL}
+        </a>
+        .
       </p>
       <Link href="/apply" className={`${buttonClasses("primary", "lg")} mt-8`}>
         Start application
