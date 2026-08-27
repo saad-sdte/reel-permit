@@ -29,7 +29,11 @@ import {
   Moon,
   Sun,
   Lock,
+  Eye,
+  EyeOff,
+  ShieldAlert,
 } from "lucide-react";
+import { Logo } from "@/components/Logo";
 import type { ApplicationRecord, ApplicationStatus } from "@/lib/storage";
 import type { PublicAdminUser } from "@/lib/admin-users";
 import { CopyableValue } from "@/components/admin/copyable-value";
@@ -1527,10 +1531,40 @@ export function ApplicationDetailView({ id }: { id: string }) {
   );
 }
 
+function AdminLoginFrame({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="admin-root admin-login-wrap">
+      <div className="admin-login-stage">
+        <div className="admin-login-brand">
+          <Logo theme="white" className="h-8" />
+          <span className="admin-login-badge">Restricted</span>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+export function AdminLoginUnconfigured() {
+  return (
+    <AdminLoginFrame>
+      <div className="admin-login-card">
+        <p className="admin-login-kicker">Setup required</p>
+        <h1 className="admin-login-title">Console is not configured</h1>
+        <p className="admin-login-lede">
+          Set <code>ADMIN_PANEL_SECRET</code> (min 8 characters) and a real{" "}
+          <code>MONGODB_URI</code>, then reload. Database name should be <code>reelpermit</code>.
+        </p>
+      </div>
+    </AdminLoginFrame>
+  );
+}
+
 export function AdminLoginForm() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -1559,62 +1593,63 @@ export function AdminLoginForm() {
   }
 
   return (
-    <div className="admin-root admin-login-wrap">
-      <div className="admin-login-shell">
-        <aside className="admin-login-aside" aria-hidden="true">
-          <p className="admin-login-wordmark admin-login-wordmark-on-dark">
-            Reel<span>Permit</span>
-          </p>
-          <p className="admin-login-aside-kicker">Staff only</p>
-          <h2 className="admin-login-aside-title">Michigan license operations</h2>
-          <p className="admin-login-aside-copy">
-            Review applications, documents, and deliveries. This is not a public page.
-          </p>
-        </aside>
-        <form onSubmit={(e) => void onSubmit(e)} className="admin-login-card">
-          <p className="admin-login-wordmark">
-            Reel<span>Permit</span>
-          </p>
-          <h1 className="admin-login-title">Control panel</h1>
-          <p className="admin-login-lede">Sign in with your ReelPermit work email.</p>
-          <label className="admin-login-field">
-            <span className="admin-field-label">Email</span>
+    <AdminLoginFrame>
+      <form onSubmit={(e) => void onSubmit(e)} className="admin-login-card">
+        <p className="admin-login-kicker">Staff console</p>
+        <h1 className="admin-login-title">Sign in</h1>
+        <p className="admin-login-lede">Work email and password for authorized operators.</p>
+        <label className="admin-login-field">
+          <span className="admin-field-label">Email</span>
+          <input
+            className="admin-input admin-login-input"
+            type="email"
+            autoFocus
+            autoComplete="username"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="name@reelpermit.com"
+            required
+          />
+        </label>
+        <label className="admin-login-field">
+          <span className="admin-field-label">Password</span>
+          <span className="admin-login-passwrap">
             <input
-              className="admin-input"
-              type="email"
-              autoFocus
-              autoComplete="username"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@reelpermit.com"
-              required
-            />
-          </label>
-          <label className="admin-login-field">
-            <span className="admin-field-label">Password</span>
-            <input
-              className="admin-input"
-              type="password"
+              className="admin-input admin-login-input"
+              type={showPassword ? "text" : "password"}
               autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter password"
+              placeholder="••••••••"
               required
             />
-          </label>
-          {error ? <p className="admin-alert admin-alert-error">{error}</p> : null}
-          <button
-            type="submit"
-            className="admin-btn admin-btn-primary admin-login-submit"
-            disabled={loading}
-          >
-            <Lock size={16} aria-hidden="true" />
-            {loading ? "Signing in…" : "Sign in"}
-          </button>
-          <p className="admin-login-foot">reelpermit.com · authorized staff</p>
-        </form>
-      </div>
-    </div>
+            <button
+              type="button"
+              className="admin-login-eye"
+              onClick={() => setShowPassword((v) => !v)}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </span>
+        </label>
+        {error ? (
+          <p className="admin-login-error" role="alert">
+            <ShieldAlert size={16} aria-hidden="true" />
+            <span>{error}</span>
+          </p>
+        ) : null}
+        <button
+          type="submit"
+          className="admin-btn admin-btn-primary admin-login-submit"
+          disabled={loading}
+        >
+          <Lock size={15} aria-hidden="true" />
+          {loading ? "Signing in…" : "Continue"}
+        </button>
+        <p className="admin-login-foot">Authorized personnel only. Session is encrypted.</p>
+      </form>
+    </AdminLoginFrame>
   );
 }
 
