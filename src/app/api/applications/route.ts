@@ -11,6 +11,7 @@ import {
 import { chargeSale, vaultEnabled } from "@/lib/nmi";
 import { createWhopCheckoutSession, paymentDescriptor, whopConfigured } from "@/lib/whop";
 import { applyPromoCode } from "@/lib/promo";
+import { fulfillZeroPromoOrder } from "@/lib/complete-paid-order";
 import {
   createOrReuseApplication,
   getApplicationById,
@@ -189,7 +190,7 @@ export async function POST(request: Request) {
     : 0;
   const { amount, applied: promoApplied } = applyPromoCode(baseAmount, rawBody.promoCode);
 
-  if (amount <= 0) {
+  if (amount < 0 || (amount === 0 && !promoApplied)) {
     return NextResponse.json(
       { ok: false, message: "We could not price this order. Please re-select your license." },
       { status: 400 },
@@ -290,6 +291,43 @@ export async function POST(request: Request) {
       amount: (appRecord.amountCents ?? amountCents) / 100,
       duplicate: true,
     });
+  }
+
+  /* ------------------------- $0 test promo (skip processor) ------------------------- */
+
+  if (promoApplied && amount === 0) {
+    if (!appRecord) {
+      return NextResponse.json(
+        { ok: false, message: "We could not save your application. Please try again." },
+        { status: 500 },
+      );
+    }
+    try {
+      const fulfilled = await fulfillZeroPromoOrder(appRecord, promoApplied, "checkout");
+      await logPaymentEvent({
+        applicationId: appRecord.id,
+        source: "checkout",
+        eventType: "promo_zero",
+        detail: { promoCode: promoApplied },
+      });
+      return NextResponse.json({
+        ok: true,
+        alreadyPaid: true,
+        reference: fulfilled.reference,
+        applicationId: appRecord.id,
+        confirmationEmailedTo: fulfilled.emailedTo,
+        amount: 0,
+      });
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error(
+        `[api/applications] $0 promo fulfill failed: ${err instanceof Error ? err.message : "unknown"}`,
+      );
+      return NextResponse.json(
+        { ok: false, message: "We could not complete this order. Please try again." },
+        { status: 500 },
+      );
+    }
   }
 
   /* ------------------------- Whop checkout ------------------------- */

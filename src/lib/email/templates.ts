@@ -74,7 +74,7 @@ function orderTotal(ctx: OrderEmailContext): number {
   // Prefer the actual charged/stored amount so promo codes and overrides match
   // what the gateway charged and what the customer receipt shows. Fall back to
   // catalog pricing only when no payment amount is available yet (e.g. checkout started).
-  if (typeof ctx.app.payment?.amount === "number" && ctx.app.payment.amount > 0) {
+  if (typeof ctx.app.payment?.amount === "number") {
     return ctx.app.payment.amount;
   }
   return ctx.config

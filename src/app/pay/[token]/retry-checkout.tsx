@@ -64,7 +64,7 @@ export function RetryCheckout({
   function handlePaid(result: PaidResult) {
     setDone({
       reference: result.reference,
-      amount: result.amount > 0 ? result.amount : total,
+      amount: typeof result.amount === "number" ? result.amount : total,
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -94,7 +94,7 @@ export function RetryCheckout({
         setDone({
           reference: json.reference,
           alreadyPaid: json.alreadyPaid,
-          amount: typeof json.amount === "number" && json.amount > 0 ? json.amount : total,
+          amount: typeof json.amount === "number" ? json.amount : total,
         });
         window.scrollTo({ top: 0, behavior: "smooth" });
         return;

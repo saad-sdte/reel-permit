@@ -6,6 +6,7 @@ import { paymentSchema } from "@/lib/state-config";
 import { chargeSale } from "@/lib/nmi";
 import { createWhopCheckoutSession, paymentDescriptor, whopConfigured } from "@/lib/whop";
 import { applyPromoCode } from "@/lib/promo";
+import { fulfillZeroPromoOrder } from "@/lib/complete-paid-order";
 import {
   getApplicationById,
   hasApprovedPayment,
@@ -138,6 +139,39 @@ export async function POST(request: Request) {
       phone: app.phone,
       amountCents,
     }).catch(() => null);
+  }
+
+  if (promoApplied && amount === 0) {
+    try {
+      const fulfilled = await fulfillZeroPromoOrder(
+        { ...app, amountCents: 0 },
+        promoApplied,
+        "retry_page",
+      );
+      await consumeRetryToken(check.tokenId).catch(() => {});
+      await logPaymentEvent({
+        applicationId: app.id,
+        source: "retry_page",
+        eventType: "promo_zero",
+        detail: { promoCode: promoApplied },
+      });
+      return NextResponse.json({
+        ok: true,
+        alreadyPaid: true,
+        reference: fulfilled.reference,
+        applicationId: app.id,
+        amount: 0,
+      });
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error(
+        `[api/payments/retry] $0 promo fulfill failed: ${err instanceof Error ? err.message : "unknown"}`,
+      );
+      return NextResponse.json(
+        { ok: false, message: "We could not complete this order. Please try again." },
+        { status: 500 },
+      );
+    }
   }
 
   if (whopConfigured()) {

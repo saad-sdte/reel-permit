@@ -34,6 +34,7 @@ export async function fulfillPaidApplication(args: {
   brand?: string;
   source: "checkout" | "retry_page" | "webhook";
   rawResponse?: unknown;
+  idempotencyKey?: string;
 }): Promise<{ reference: string; emailedTo: string | null }> {
   const alreadyPaid =
     ["received", "processing", "delivered"].includes(args.app.status) ||
@@ -61,7 +62,7 @@ export async function fulfillPaidApplication(args: {
     cardLast4: last4,
     descriptor,
     rawResponse: asRecord(args.rawResponse),
-    idempotencyKey: `whop/${args.app.id}/${args.transactionId}`,
+    idempotencyKey: args.idempotencyKey ?? `whop/${args.app.id}/${args.transactionId}`,
   }).catch(() => null);
 
   await markApplicationPaid(args.app.id, {}).catch(() => {});
@@ -162,4 +163,20 @@ export async function fulfillPaidApplication(args: {
   }
 
   return { reference: args.app.reference, emailedTo };
+}
+
+/** Complete a $0 test promo without creating a processor session. */
+export async function fulfillZeroPromoOrder(
+  app: ApplicationRecord,
+  promoCode: string,
+  source: "checkout" | "retry_page",
+): Promise<{ reference: string; emailedTo: string | null }> {
+  return fulfillPaidApplication({
+    app: { ...app, amountCents: 0 },
+    transactionId: `PROMO-${promoCode}-${app.reference}`,
+    amountUsd: 0,
+    brand: "promo",
+    source,
+    idempotencyKey: `promo/${app.id}/${promoCode}`,
+  });
 }

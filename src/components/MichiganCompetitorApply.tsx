@@ -402,6 +402,8 @@ export function MichiganCompetitorApply({ config }: { config: StateConfig }) {
     if (isShortTerm && !form.licenseStartDate) {
       e.push("Choose a license start date.");
     }
+    if (!form.dlFrontData) e.push("Upload the front of your Driver's License.");
+    if (!form.dlBackData) e.push("Upload the back of your Driver's License.");
     return e;
   }
 
@@ -423,8 +425,6 @@ export function MichiganCompetitorApply({ config }: { config: StateConfig }) {
     else if (!/^\d{5}(-\d{4})?$/.test(form.zip.trim())) {
       e.push("Enter a valid ZIP code.");
     }
-    if (!form.dlFrontData) e.push("Upload the front of your Driver's License.");
-    if (!form.dlBackData) e.push("Upload the back of your Driver's License.");
     if (!form.consent) e.push("Please confirm your information and agree to the terms.");
     return e;
   }
@@ -501,7 +501,7 @@ export function MichiganCompetitorApply({ config }: { config: StateConfig }) {
 
   function handlePaid(result: PaidResult) {
     applicationIdRef.current = null;
-    setConversionValue(result.amount > 0 ? result.amount : total);
+    setConversionValue(typeof result.amount === "number" ? result.amount : total);
     setReference(result.reference);
     setConfirmationEmail(result.email ?? form.email.trim() ?? null);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -528,9 +528,7 @@ export function MichiganCompetitorApply({ config }: { config: StateConfig }) {
       };
       if (res.ok && json.ok && json.reference) {
         applicationIdRef.current = null;
-        setConversionValue(
-          typeof json.amount === "number" && json.amount > 0 ? json.amount : total,
-        );
+        setConversionValue(typeof json.amount === "number" ? json.amount : total);
         setReference(json.reference);
         setConfirmationEmail(json.confirmationEmailedTo ?? null);
         window.scrollTo({ top: 0, behavior: "smooth" });
@@ -732,6 +730,7 @@ export function MichiganCompetitorApply({ config }: { config: StateConfig }) {
 
                 {form.residency ? (
                   <DlUploadFields
+                    required
                     value={form}
                     onChange={(patch) => setForm((f) => ({ ...f, ...patch }))}
                     onError={(msg) => setErrors([msg])}

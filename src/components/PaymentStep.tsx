@@ -22,7 +22,6 @@ import {
   applyPromoCode,
   isTestPromoUiEnabled,
   normalizePromoCode,
-  TEST_PROMO_AMOUNT,
 } from "@/lib/promo";
 import { Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
@@ -272,7 +271,7 @@ export function PaymentStep({
       onPaidRef.current({
         reference: paid?.reference ?? pendingReference ?? "RP-PENDING",
         email: paid?.email ?? applicantEmail ?? null,
-        amount: paid?.amount && paid.amount > 0 ? paid.amount : chargeTotal,
+        amount: paid?.amount != null ? paid.amount : chargeTotal,
       });
     } finally {
       setConfirming(false);
@@ -286,10 +285,14 @@ export function PaymentStep({
       setPromoMessage(null);
       return;
     }
-    const { applied } = applyPromoCode(total, normalized);
+    const { amount: promoAmount, applied } = applyPromoCode(total, normalized);
     if (applied) {
       setAppliedPromo(applied);
-      setPromoMessage(`Promo ${applied} applied — test charge of ${formatPrice(TEST_PROMO_AMOUNT)}.`);
+      setPromoMessage(
+        promoAmount === 0
+          ? `Promo ${applied} applied — $0.00 test order (no card charge).`
+          : `Promo ${applied} applied — test charge of ${formatPrice(promoAmount)}.`,
+      );
     } else {
       setAppliedPromo(null);
       setPromoMessage("That promo code is not valid.");
