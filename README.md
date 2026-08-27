@@ -1,36 +1,35 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ReelPermit
 
-## Getting Started
+Michigan fishing-license assistance site. Local-only for now.
 
-First, run the development server:
+ReelPermit is a private service — not affiliated with the Michigan DNR or any government agency.
+
+## Run locally
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+No API keys are required:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Payments simulate as `DEV-…` charges
+- Emails print to the terminal
+- Admin uses an in-memory store (`MONGODB_URI=memory`)
 
-## Learn More
+Copy `.env.example` to `.env.local` if you want to add Resend, NMI, Postgres, or Cloudinary later.
 
-To learn more about Next.js, take a look at the following resources:
+## Scripts
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- `npm run dev` — Next.js
+- `npm run build` — production build (skips DB migrations when `DATABASE_URL` is unset)
+- `npm run admin:seed` — create the first admin user (needs `ADMIN_BOOTSTRAP_EMAIL` / `ADMIN_BOOTSTRAP_PASSWORD`)
+- `npm run db:migrate` — apply `migrations/` when Postgres is configured
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## GitHub
 
-## Deploy on Vercel
+Repository: [saad-sdte/reel-permit](https://github.com/saad-sdte/reel-permit)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This folder is its own git repo. Do not push it into the AnglerPermit remote.

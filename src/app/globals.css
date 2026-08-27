@@ -2,26 +2,72 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  html {
+    @apply scroll-smooth;
+  }
+  body {
+    @apply bg-cream text-ink antialiased;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-display font-semibold tracking-tight;
+  }
+  :focus-visible {
+    @apply rounded-sm outline-none ring-2 ring-copper ring-offset-2 ring-offset-cream;
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  .container-site {
+    @apply mx-auto w-full max-w-6xl px-5 sm:px-8 lg:px-10;
+  }
 }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
+body.wizard-active footer[data-site-footer] {
+  display: none;
+}
+
+.inner-prose p {
+  @apply leading-relaxed text-ink/80;
+}
+
+.cl-apply input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.cl-apply select,
+.cl-apply textarea {
+  background: #ffffff !important;
+  border: 1px solid #d3cdc0 !important;
+  color: #1a1916 !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
+}
+.cl-apply input::placeholder {
+  color: #7a7468 !important;
+}
+.cl-apply option {
+  background: #ffffff;
+  color: #1a1916;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
   }
+  [data-aos] {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}
+
+[data-aos] {
+  pointer-events: auto;
+}
+
+/* First paint stays visible. AOS only hides off-screen nodes after init. */
+html:not(.aos-on) [data-aos] {
+  opacity: 1 !important;
+  transform: none !important;
 }

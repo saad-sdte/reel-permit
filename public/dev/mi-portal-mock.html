@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MI eLicense Create Customer (local mock)</title>
+    <style>
+      :root {
+        --ink: #0f172a;
+        --muted: #64748b;
+        --line: #cbd5e1;
+        --bg: #eef2f6;
+        --card: #fff;
+        --accent: #1d4d3a;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font: 15px/1.45 "Segoe UI", system-ui, sans-serif;
+        color: var(--ink);
+        background: linear-gradient(180deg, #d9e4dc 0%, var(--bg) 40%);
+        min-height: 100vh;
+      }
+      header {
+        background: var(--accent);
+        color: #fff;
+        padding: 14px 20px;
+      }
+      header p {
+        margin: 4px 0 0;
+        opacity: 0.85;
+        font-size: 13px;
+      }
+      main {
+        max-width: 720px;
+        margin: 20px auto;
+        padding: 0 16px 80px;
+      }
+      .banner {
+        background: #fff7ed;
+        border: 1px solid #fdba74;
+        color: #9a3412;
+        padding: 10px 12px;
+        border-radius: 8px;
+        margin-bottom: 16px;
+        font-size: 13px;
+      }
+      form {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 18px;
+        display: grid;
+        gap: 12px;
+      }
+      h2 {
+        margin: 8px 0 0;
+        font-size: 16px;
+        color: var(--accent);
+      }
+      .row {
+        display: grid;
+        gap: 4px;
+      }
+      .row.two {
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+      .row.two > div {
+        display: grid;
+        gap: 4px;
+      }
+      label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #334155;
+      }
+      input,
+      select {
+        width: 100%;
+        padding: 8px 10px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        font: inherit;
+      }
+      .radios {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+      .radios label {
+        font-weight: 500;
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+      button[type="submit"] {
+        margin-top: 8px;
+        justify-self: start;
+        background: var(--accent);
+        color: #fff;
+        border: 0;
+        border-radius: 8px;
+        padding: 10px 16px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <strong>Michigan DNR eLicense — Create New Customer (MOCK)</strong>
+      <p>Local test page for ReelPermit Ops autofill. Not the real government site.</p>
+    </header>
+    <main>
+      <div class="banner">
+        After <strong>Apply Now</strong> in CRM, use the floating <strong>Fill from CRM</strong> panel
+        (requires the unpacked Chrome extension). Payment fields are intentionally absent.
+      </div>
+      <form id="create-customer" onsubmit="event.preventDefault(); alert('Mock only — nothing submitted.');">
+        <h2>Identification</h2>
+        <div class="row">
+          <label for="idType">Choose an identification option</label>
+          <select id="idType" name="idType">
+            <option value="">—</option>
+            <option value="Driver's License/State ID">Driver's License/State ID</option>
+            <option value="Sportcard Number">Sportcard Number</option>
+            <option value="Customer Number">Customer Number</option>
+          </select>
+        </div>
+        <div class="row two">
+          <div>
+            <label for="idNumber">Identification Number</label>
+            <input id="idNumber" name="idNumber" />
+          </div>
+          <div>
+            <label for="driversLicenseState">Driver's License State</label>
+            <select id="driversLicenseState" name="driversLicenseState">
+              <option value="">—</option>
+              <option value="MICHIGAN">MICHIGAN</option>
+              <option value="OHIO">OHIO</option>
+              <option value="INDIANA">INDIANA</option>
+              <option value="ILLINOIS">ILLINOIS</option>
+              <option value="WISCONSIN">WISCONSIN</option>
+              <option value="TEXAS">TEXAS</option>
+              <option value="FLORIDA">FLORIDA</option>
+              <option value="CALIFORNIA">CALIFORNIA</option>
+            </select>
+          </div>
+        </div>
+
+        <h2>Personal details</h2>
+        <div class="row two">
+          <div>
+            <label for="lastName">Last Name</label>
+            <input id="lastName" name="lastName" />
+          </div>
+          <div>
+            <label for="firstName">First Name</label>
+            <input id="firstName" name="firstName" />
+          </div>
+        </div>
+        <div class="row two">
+          <div>
+            <label for="middleName">Middle Name</label>
+            <input id="middleName" name="middleName" />
+          </div>
+          <div>
+            <label for="dateOfBirth">Date of Birth</label>
+            <input id="dateOfBirth" name="dateOfBirth" placeholder="mm/dd/yyyy" />
+          </div>
+        </div>
+        <div class="row two">
+          <div>
+            <label for="gender">Gender</label>
+            <select id="gender" name="gender">
+              <option value="">—</option>
+              <option value="FEMALE">FEMALE</option>
+              <option value="MALE">MALE</option>
+              <option value="NON-BINARY">NON-BINARY</option>
+              <option value="OTHER">OTHER</option>
+            </select>
+          </div>
+          <div>
+            <label for="weightPounds">Weight (pounds)</label>
+            <input id="weightPounds" name="weightPounds" />
+          </div>
+        </div>
+        <div class="row two">
+          <div>
+            <label for="heightFt">Height (ft)</label>
+            <select id="heightFt" name="heightFt">
+              <option value="">—</option>
+              <option>4</option>
+              <option>5</option>
+              <option>6</option>
+              <option>7</option>
+            </select>
+          </div>
+          <div>
+            <label for="heightIn">Height (in)</label>
+            <select id="heightIn" name="heightIn">
+              <option value="">—</option>
+              <option>0</option>
+              <option>1</option>
+              <option>2</option>
+              <option>3</option>
+              <option>4</option>
+              <option>5</option>
+              <option>6</option>
+              <option>7</option>
+              <option>8</option>
+              <option>9</option>
+              <option>10</option>
+              <option>11</option>
+            </select>
+          </div>
+        </div>
+
+        <h2>Contact</h2>
+        <div class="row two">
+          <div>
+            <label for="email">Email</label>
+            <input id="email" name="email" type="email" />
+          </div>
+          <div>
+            <label for="primaryPhone">Primary Phone</label>
+            <input id="primaryPhone" name="primaryPhone" />
+          </div>
+        </div>
+
+        <h2>Residence</h2>
+        <div class="row">
+          <label for="resStreet1">Street Address</label>
+          <input id="resStreet1" name="resStreet1" />
+        </div>
+        <div class="row two">
+          <div>
+            <label for="resCity">City</label>
+            <input id="resCity" name="resCity" />
+          </div>
+          <div>
+            <label for="resState">State/Prov</label>
+            <select id="resState" name="resState">
+              <option value="">—</option>
+              <option value="MICHIGAN">MICHIGAN</option>
+              <option value="OHIO">OHIO</option>
+              <option value="TEXAS">TEXAS</option>
+            </select>
+          </div>
+        </div>
+        <div class="row two">
+          <div>
+            <label for="resZip">Zip</label>
+            <input id="resZip" name="resZip" />
+          </div>
+          <div>
+            <label for="resCountry">Country</label>
+            <select id="resCountry" name="resCountry">
+              <option value="">—</option>
+              <option value="UNITED STATES">UNITED STATES</option>
+              <option value="CANADA">CANADA</option>
+            </select>
+          </div>
+        </div>
+
+        <h2>Michigan resident</h2>
+        <div class="row">
+          <span class="label-like">Michigan Resident</span>
+          <div class="radios" role="group" aria-label="Michigan Resident">
+            <label><input type="radio" name="michiganResident" value="Yes" /> Yes</label>
+            <label><input type="radio" name="michiganResident" value="No" /> No</label>
+          </div>
+        </div>
+
+        <button type="submit">Continue (mock)</button>
+      </form>
+    </main>
+  </body>
+</html>
