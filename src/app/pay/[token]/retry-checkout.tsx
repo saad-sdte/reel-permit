@@ -4,29 +4,29 @@ import { useState } from "react";
 import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
 import type { TokenizedPayment } from "@/lib/state-config";
-import { PaymentStep } from "@/components/PaymentStep";
+import { PaymentStep, type CheckoutStartResult, type PaidResult } from "@/components/PaymentStep";
 import { PurchaseConversionBeacon } from "@/components/PurchaseConversionBeacon";
 import { Card } from "@/components/ui/Card";
 import { buttonClasses } from "@/components/ui/Button";
 import { SUPPORT_EMAIL, SUPPORT_MAILTO } from "@/lib/contact";
 
 /**
- * Client half of /pay/{token}: reuses the exact PaymentStep from the main
- * checkout (same Collect.js tokenization, same PCI posture — raw card data
- * never reaches our servers) and POSTs the single-use payment token to
- * /api/payments/retry. Declines render inline with the mapped hint and the
- * customer can immediately retry.
+ * Client half of /pay/{token}: reuses PaymentStep (Whop embed in production,
+ * local simulated card in development) and completes payment for a declined
+ * application without requiring login.
  */
 export function RetryCheckout({
   retryToken,
   total,
   stateName,
   reference,
+  email,
 }: {
   retryToken: string;
   total: number;
   stateName: string;
   reference: string;
+  email?: string | null;
 }) {
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -36,6 +36,38 @@ export function RetryCheckout({
     amount: number;
   }>(null);
   const [linkDead, setLinkDead] = useState(false);
+
+  async function startCheckout(promoCode?: string | null): Promise<CheckoutStartResult> {
+    try {
+      const res = await fetch("/api/payments/retry", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token: retryToken,
+          ...(promoCode ? { promoCode } : {}),
+        }),
+      });
+      const json = (await res.json()) as CheckoutStartResult & { tokenState?: string };
+      if (res.status === 410) {
+        setLinkDead(true);
+        return { ok: false, message: "This payment link is no longer valid." };
+      }
+      if (!res.ok && !json.useLocalCard && !json.awaitingPayment) {
+        return { ok: false, message: json.message ?? "Payment could not be started. Please try again." };
+      }
+      return json;
+    } catch {
+      return { ok: false, message: "We could not reach the server. Check your connection and try again." };
+    }
+  }
+
+  function handlePaid(result: PaidResult) {
+    setDone({
+      reference: result.reference,
+      amount: result.amount > 0 ? result.amount : total,
+    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 
   async function handlePay(payment: TokenizedPayment, promoCode?: string | null) {
     setProcessing(true);
@@ -135,10 +167,13 @@ export function RetryCheckout({
         processing={processing}
         error={error}
         onPay={handlePay}
+        onStartCheckout={startCheckout}
+        onPaid={handlePaid}
+        applicantEmail={email ?? undefined}
       />
       <p className="mt-4 text-center text-xs text-slate-500">
-        Application <span className="font-mono">{reference}</span> · card details are tokenized in
-        your browser and never touch our servers.
+        Application <span className="font-mono">{reference}</span> · card details never touch our
+        servers.
       </p>
     </div>
   );

@@ -579,11 +579,10 @@ export const consentsSchema = z.object({
 export type Consents = z.infer<typeof consentsSchema>;
 
 /**
- * Client-side tokenized payment handle (NMI Collect.js-style).
+ * Local/dev tokenized payment handle.
  *
- * PCI: the raw card number/expiry/CVV NEVER leave the customer's browser —
- * the card data is tokenized client-side and only this token reaches our
- * server. last4/brand are PCI-safe display metadata for the receipt/record.
+ * Production checkout uses Whop's embedded form (card data never touches
+ * this server). This schema is only for the local simulated charge path.
  */
 export const paymentSchema = z.object({
   token: z
@@ -626,7 +625,7 @@ export function buildSubmissionSchema(config: StateConfig) {
         .default([]),
       data: buildApplicantSchema(config),
       consents: consentsSchema,
-      payment: paymentSchema,
+      payment: paymentSchema.optional(),
     })
     .superRefine((submission, ctx) => {
       // Conditional fields may key off wizard-level licenseId / residency.
@@ -693,7 +692,7 @@ export const genericSubmissionSchema = z.object({
     })
     .passthrough(),
   consents: consentsSchema,
-  payment: paymentSchema,
+  payment: paymentSchema.optional(),
 });
 
 export type GenericSubmission = z.infer<typeof genericSubmissionSchema>;

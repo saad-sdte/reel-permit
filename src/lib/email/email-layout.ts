@@ -1,33 +1,33 @@
 /**
  * Shared email layout — brand shell used by every ReelPermit email.
  *
- * Email HTML rules applied throughout:
- * - table-based layout, all styles inline (Gmail strips <style> in some views)
- * - system font stack (webfonts are unreliable in email clients)
- * - max width 600px, single column, generous whitespace
- * - brand palette mirrors tailwind.config.ts: navy #0A2540, forest #1B4332,
- *   forest-500 #2D6A4F accents, slate text
- * - every template also ships a plain-text alternative (built in templates.ts)
+ * Distinct from AnglerPermit: cream canvas, deep-green header, gold wordmark
+ * accent, copper links. Table-based, inline styles only (Gmail-safe).
  */
 
 export const BRAND = {
-  navy: "#0A2540",
-  navyLight: "#122F4E",
-  navy50: "#F0F5FA",
-  navy100: "#DCE7F2",
-  forest: "#1B4332",
-  forest500: "#2D6A4F",
-  forest50: "#F0F7F4",
-  slate600: "#475569",
-  slate500: "#64748B",
-  slate200: "#E2E8F0",
-  slate50: "#F8FAFC",
+  navy: "#16332b",
+  navyLight: "#215248",
+  navy50: "#f4f1ea",
+  navy100: "#d7e4df",
+  forest: "#215248",
+  forest500: "#2f6f62",
+  forest50: "#e7f1ee",
+  slate600: "#4a463e",
+  slate500: "#7a7468",
+  slate200: "#d3cdc0",
+  slate50: "#fbf9f4",
   white: "#FFFFFF",
   red600: "#DC2626",
+  gold: "#c4a574",
+  ink: "#1a1916",
+  cream: "#f4f1ea",
 } as const;
 
 export const FONT_STACK =
-  "'Inter','Segoe UI',system-ui,-apple-system,'Helvetica Neue',Arial,sans-serif";
+  "'IBM Plex Sans','Segoe UI',system-ui,-apple-system,'Helvetica Neue',Arial,sans-serif";
+
+const DISPLAY_STACK = "Georgia,'Times New Roman',Times,serif";
 
 /** Business identity + support contact shown in every footer. */
 export const BUSINESS = {
@@ -39,9 +39,9 @@ export const BUSINESS = {
 
 /** Status-banner tones — the 2-second scan line under the header. */
 export const TONES = {
-  info: { fg: "#175CD3", bg: "#EFF8FF", glyph: "ℹ" },
-  success: { fg: "#067647", bg: "#ECFDF3", glyph: "✓" },
-  warning: { fg: "#B54708", bg: "#FFFAEB", glyph: "!" },
+  info: { fg: "#215248", bg: "#e7f1ee", glyph: "•" },
+  success: { fg: "#215248", bg: "#e7f1ee", glyph: "✓" },
+  warning: { fg: "#7d6438", bg: "#f6eedc", glyph: "!" },
   error: { fg: "#B42318", bg: "#FEF3F2", glyph: "!" },
 } as const;
 
@@ -69,8 +69,8 @@ export function statusBanner(tone: Tone, text: string): string {
 }
 
 /**
- * Bulletproof primary CTA button (navy, 48px tap target) with a VML
- * fallback so Outlook on Windows renders it correctly.
+ * Bulletproof primary CTA button with a VML fallback so Outlook on Windows
+ * renders it correctly.
  */
 export function ctaButton(href: string, label: string): string {
   const safeHref = esc(href);
@@ -78,13 +78,13 @@ export function ctaButton(href: string, label: string): string {
   return `
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0 8px;"><tr><td align="center">
       <!--[if mso]>
-      <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${safeHref}" style="height:48px;v-text-anchor:middle;width:320px;" arcsize="17%" fillcolor="${BRAND.navy}" stroke="f">
+      <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${safeHref}" style="height:48px;v-text-anchor:middle;width:320px;" arcsize="8%" fillcolor="${BRAND.navy}" stroke="f">
         <w:anchorlock/>
         <center style="color:#FFFFFF;font-family:sans-serif;font-size:16px;font-weight:600;">${safeLabel}</center>
       </v:roundrect>
       <![endif]-->
       <!--[if !mso]><!-->
-      <a href="${safeHref}" style="display:inline-block;min-width:220px;padding:14px 36px;border-radius:8px;background:${BRAND.navy};color:#FFFFFF;font-size:16px;font-weight:600;text-decoration:none;text-align:center;line-height:20px;">${safeLabel}</a>
+      <a href="${safeHref}" style="display:inline-block;min-width:220px;padding:14px 36px;border-radius:4px;background:${BRAND.navy};color:#FFFFFF;font-size:16px;font-weight:600;text-decoration:none;text-align:center;line-height:20px;">${safeLabel}</a>
       <!--<![endif]-->
     </td></tr></table>`;
 }
@@ -100,20 +100,18 @@ export function esc(value: unknown): string {
 }
 
 export function siteUrl(): string {
-  return process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  return process.env.NEXT_PUBLIC_SITE_URL ?? "https://reelpermit.com";
 }
 
 /** A key/value row inside a details table. */
 export function detailRow(label: string, value: string, opts?: { mono?: boolean; strong?: boolean }): string {
   const mono = opts?.mono ? `font-family:'SF Mono',SFMono-Regular,Consolas,'Liberation Mono',Menlo,monospace;letter-spacing:0.02em;` : "";
   const weight = opts?.strong ? "700" : "500";
-  // Label column is capped (long official labels wrap) so the value column
-  // always keeps room — never use nowrap here or values collapse to 1ch.
   const shortLabel = label.length > 90 ? `${label.slice(0, 87)}…` : label;
   return `
     <tr>
       <td style="padding:7px 24px 7px 0;font-size:13px;line-height:1.5;color:${BRAND.slate500};vertical-align:top;width:44%;">${esc(shortLabel)}</td>
-      <td style="padding:7px 0;font-size:14px;line-height:1.5;color:${BRAND.navy};font-weight:${weight};${mono}text-align:right;vertical-align:top;overflow-wrap:anywhere;">${value}</td>
+      <td style="padding:7px 0;font-size:14px;line-height:1.5;color:${BRAND.ink};font-weight:${weight};${mono}text-align:right;vertical-align:top;overflow-wrap:anywhere;">${value}</td>
     </tr>`;
 }
 
@@ -123,7 +121,7 @@ export function detailCard(rowsHtml: string, opts?: { heading?: string }): strin
     ? `<p style="margin:0 0 10px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:${BRAND.slate500};">${esc(opts.heading)}</p>`
     : "";
   return `
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:18px 0 0;border:1px solid ${BRAND.slate200};border-radius:12px;background:${BRAND.slate50};">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:18px 0 0;border:1px solid ${BRAND.slate200};border-radius:4px;background:${BRAND.slate50};">
       <tr><td style="padding:18px 22px;">
         ${heading}
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${rowsHtml}</table>
@@ -134,11 +132,11 @@ export function detailCard(rowsHtml: string, opts?: { heading?: string }): strin
 /** Prominent reference-number banner. */
 export function referenceBanner(reference: string): string {
   return `
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:22px 0 0;border:1px solid ${BRAND.navy100};border-radius:12px;background:${BRAND.navy50};">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:22px 0 0;border:1px solid ${BRAND.navy100};border-radius:4px;background:${BRAND.navy50};">
       <tr><td align="center" style="padding:16px 22px;">
-        <p style="margin:0;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:${BRAND.slate500};">Your reference number</p>
+        <p style="margin:0;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:${BRAND.slate500};">File number</p>
         <p style="margin:6px 0 0;font-family:'SF Mono',SFMono-Regular,Consolas,'Liberation Mono',Menlo,monospace;font-size:20px;font-weight:700;color:${BRAND.navy};letter-spacing:0.03em;">${esc(reference)}</p>
-        <p style="margin:6px 0 0;font-size:12px;color:${BRAND.slate500};">Keep this number — include it whenever you contact us.</p>
+        <p style="margin:6px 0 0;font-size:12px;color:${BRAND.slate500};">Quote this number if you write to support.</p>
       </td></tr>
     </table>`;
 }
@@ -151,7 +149,7 @@ export function stepsBlock(steps: Array<{ title: string; body: string }>): strin
       <tr>
         <td style="vertical-align:top;padding:8px 14px 8px 0;">
           <table role="presentation" cellpadding="0" cellspacing="0"><tr>
-            <td align="center" style="width:26px;height:26px;border-radius:50%;background:${BRAND.navy};color:${BRAND.white};font-size:13px;font-weight:700;line-height:26px;">${i + 1}</td>
+            <td align="center" style="width:26px;height:26px;border-radius:4px;background:${BRAND.navy};color:${BRAND.white};font-size:13px;font-weight:700;line-height:26px;">${i + 1}</td>
           </tr></table>
         </td>
         <td style="vertical-align:top;padding:8px 0;">
@@ -169,9 +167,9 @@ export interface ShellOptions {
   preheader: string;
   /** Main body HTML (inside the white card). */
   bodyHtml: string;
-  /** Optional badge text shown in the navy header, e.g. "Order confirmation". */
+  /** Optional badge text shown in the header, e.g. "Order confirmation". */
   kicker?: string;
-  /** Optional status banner (tinted strip under the navy header). */
+  /** Optional status banner (tinted strip under the header). */
   banner?: { tone: Tone; text: string };
   /** Reference number repeated small in the footer. */
   footerReference?: string;
@@ -182,8 +180,8 @@ export interface ShellOptions {
 }
 
 /**
- * Brand shell: navy header with wordmark, optional status banner, white
- * content card, slate footer with the business address + disclosure.
+ * Brand shell: deep-green header with serif wordmark, optional status banner,
+ * cream footer, MDNR non-affiliation line.
  */
 export function emailShell({
   preheader,
@@ -196,14 +194,14 @@ export function emailShell({
 }: ShellOptions): string {
   const year = new Date().getFullYear();
   const kickerHtml = kicker
-    ? `<p style="margin:10px 0 0;font-size:12px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#8AADD1;">${esc(kicker)}</p>`
+    ? `<p style="margin:10px 0 0;font-size:12px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:${BRAND.gold};">${esc(kicker)}</p>`
     : "";
   const bannerHtml = banner ? statusBanner(banner.tone, banner.text) : "";
   const referenceHtml = footerReference
-    ? `<p style="margin:12px 0 0;font-size:11px;color:${BRAND.slate500};">Reference: <span style="font-family:'SF Mono',SFMono-Regular,Consolas,'Liberation Mono',Menlo,monospace;">${esc(footerReference)}</span></p>`
+    ? `<p style="margin:12px 0 0;font-size:11px;color:${BRAND.slate500};">File: <span style="font-family:'SF Mono',SFMono-Regular,Consolas,'Liberation Mono',Menlo,monospace;">${esc(footerReference)}</span></p>`
     : "";
   const pauseHtml = pauseUrl
-    ? `<p style="margin:12px 0 0;font-size:11px;color:${BRAND.slate500};"><a href="${esc(pauseUrl)}" style="color:${BRAND.slate500};text-decoration:underline;">Pause payment reminders for this application</a></p>`
+    ? `<p style="margin:12px 0 0;font-size:11px;color:${BRAND.slate500};"><a href="${esc(pauseUrl)}" style="color:${BRAND.slate500};text-decoration:underline;">Pause payment reminders for this file</a></p>`
     : "";
   const phone = BUSINESS.supportPhone ? ` or call ${esc(BUSINESS.supportPhone)}` : "";
   return `<!DOCTYPE html>
@@ -215,15 +213,15 @@ export function emailShell({
   <meta name="supported-color-schemes" content="light">
   <title>ReelPermit</title>
 </head>
-<body style="margin:0;padding:0;background:#F4F6F8;font-family:${FONT_STACK};-webkit-text-size-adjust:100%;">
+<body style="margin:0;padding:0;background:${BRAND.cream};font-family:${FONT_STACK};-webkit-text-size-adjust:100%;">
   <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;">${esc(preheader)}&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;</div>
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F4F6F8;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${BRAND.cream};">
     <tr><td align="center" style="padding:28px 14px;">
       <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
 
         <!-- Header -->
-        <tr><td style="background:${BRAND.navy};border-radius:14px 14px 0 0;padding:26px 34px;">
-          <p style="margin:0;font-size:20px;font-weight:600;color:${BRAND.white};">Cast<span style="color:#E8C47C;">line</span></p>
+        <tr><td style="background:${BRAND.navy};border-radius:4px 4px 0 0;padding:26px 34px;">
+          <p style="margin:0;font-family:${DISPLAY_STACK};font-size:22px;font-weight:600;color:${BRAND.white};letter-spacing:-0.02em;">Reel<span style="color:${BRAND.gold};">Permit</span></p>
           ${kickerHtml}
         </td></tr>
         ${bannerHtml}
@@ -234,16 +232,16 @@ export function emailShell({
         </td></tr>
 
         <!-- Footer -->
-        <tr><td style="background:${BRAND.slate50};border:1px solid ${BRAND.slate200};border-top:0;border-radius:0 0 14px 14px;padding:22px 34px;">
+        <tr><td style="background:${BRAND.slate50};border:1px solid ${BRAND.slate200};border-top:0;border-radius:0 0 4px 4px;padding:22px 34px;">
           <p style="margin:0;font-size:12px;line-height:1.6;color:${BRAND.slate600};">
-            Questions? Just reply to this email, write to
-            <a href="mailto:${esc(BUSINESS.supportEmail)}" style="color:${BRAND.forest500};font-weight:600;text-decoration:none;">${esc(BUSINESS.supportEmail)}</a>${phone}
-            — a real person reads every message.
+            Questions? Reply to this email or write
+            <a href="mailto:${esc(BUSINESS.supportEmail)}" style="color:${BRAND.forest500};font-weight:600;text-decoration:none;">${esc(BUSINESS.supportEmail)}</a>${phone}.
+            A person on the Michigan desk reads every note.
           </p>
-          <p style="margin:12px 0 0;font-size:11px;line-height:1.6;color:${BRAND.slate500};">${esc(BUSINESS.legalName)} · <a href="mailto:${esc(BUSINESS.supportEmail)}" style="color:${BRAND.slate500};text-decoration:none;">${esc(BUSINESS.supportEmail)}</a></p>
+          <p style="margin:12px 0 0;font-size:11px;line-height:1.6;color:${BRAND.slate500};">${esc(BUSINESS.legalName)} is a private license desk — not MDNR and not a government agency.</p>
           ${referenceHtml}
           ${pauseHtml}
-          <p style="margin:12px 0 0;font-size:11px;color:${BRAND.slate500};">© ${year} ReelPermit · <a href="${utmLink("/", campaign)}" style="color:${BRAND.slate500};">reelpermit.com</a> · <a href="${utmLink("/terms", campaign)}" style="color:${BRAND.slate500};">Terms</a> · <a href="${utmLink("/privacy", campaign)}" style="color:${BRAND.slate500};">Privacy</a> · <a href="${utmLink("/refund", campaign)}" style="color:${BRAND.slate500};">Refund policy</a> · <a href="${utmLink("/contact", campaign)}" style="color:${BRAND.slate500};">Contact</a></p>
+          <p style="margin:12px 0 0;font-size:11px;color:${BRAND.slate500};">© ${year} ReelPermit · <a href="${utmLink("/", campaign)}" style="color:${BRAND.slate500};">reelpermit.com</a> · <a href="${utmLink("/terms", campaign)}" style="color:${BRAND.slate500};">Terms</a> · <a href="${utmLink("/privacy", campaign)}" style="color:${BRAND.slate500};">Privacy</a> · <a href="${utmLink("/refund", campaign)}" style="color:${BRAND.slate500};">Refunds</a> · <a href="${utmLink("/contact", campaign)}" style="color:${BRAND.slate500};">Contact</a></p>
         </td></tr>
 
       </table>
@@ -258,11 +256,12 @@ export function textFooter(opts?: { reference?: string; pauseUrl?: string }): st
   const lines = [
     "",
     "—",
-    `Questions? Just reply to this email or write to ${BUSINESS.supportEmail}.`,
+    `Questions? Reply to this email or write ${BUSINESS.supportEmail}.`,
+    "ReelPermit is a private Michigan license desk — not MDNR.",
     "",
     `${BUSINESS.legalName} · ${BUSINESS.supportEmail}`,
   ];
-  if (opts?.reference) lines.push(`Reference: ${opts.reference}`);
+  if (opts?.reference) lines.push(`File: ${opts.reference}`);
   if (opts?.pauseUrl) lines.push("", `Pause payment reminders: ${opts.pauseUrl}`);
   lines.push(`© ${new Date().getFullYear()} ReelPermit — ${siteUrl()}`);
   return lines.join("\n");

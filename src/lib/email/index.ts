@@ -46,11 +46,11 @@ export {
  * ReelPermit transactional email — Resend integration.
  *
  * Emails sent by the system:
- *   1. Customer order confirmation + payment receipt   (on successful checkout; 🐟 in subject)
+ *   1. Customer order confirmation + payment receipt   (on successful checkout)
  *   2. Admin payment-received notification with full details (on successful checkout + retry)
  *   3. Contact-form notification to support inbox      (on /api/contact)
  *   4. Contact-form acknowledgement to the customer    (on /api/contact)
- *   5. License delivery with attachments               (via /admin/deliver)
+ *   5. License delivery with attachments               (via /cpanel/admin/deliver)
  *
  * Behavior notes:
  * - Works with ZERO env vars: without RESEND_API_KEY every send becomes a
@@ -207,7 +207,7 @@ export async function sendCheckoutStartedEmails(
           type: "ops_checkout_started",
           to: admins,
           from,
-          subject: `[AP Ops] ${tpl.subject}`,
+          subject: `[RP Ops] ${tpl.subject}`,
           html: tpl.html,
           text: tpl.text,
           replyTo: to ?? undefined,

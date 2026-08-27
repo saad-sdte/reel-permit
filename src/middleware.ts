@@ -10,8 +10,14 @@ const LOCALE_COOKIE = "ap_lang";
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  if (pathname === "/admin" || pathname.startsWith("/admin/")) {
+    const url = request.nextUrl.clone();
+    url.pathname = `/cpanel${pathname}`;
+    return NextResponse.redirect(url, 308);
+  }
+
   if (
-    pathname.startsWith("/admin") ||
+    pathname.startsWith("/cpanel") ||
     pathname.startsWith("/api") ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/brand") ||

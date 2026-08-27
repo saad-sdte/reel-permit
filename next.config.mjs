@@ -8,6 +8,7 @@ const securityHeaders = [
 ];
 
 const nextConfig = {
+  transpilePackages: ["@whop/checkout", "@whop/sdk"],
   experimental: {
     optimizePackageImports: ["lucide-react"],
   },

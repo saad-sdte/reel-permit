@@ -16,6 +16,8 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
+    "@whop/checkout": "^0.6.0",
+    "@whop/sdk": "^1.0.14",
     "aos": "^2.3.4",
     "cloudinary": "^2.10.1",
     "exceljs": "^4.4.0",

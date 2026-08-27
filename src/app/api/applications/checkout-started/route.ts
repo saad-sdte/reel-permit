@@ -5,7 +5,7 @@ import {
   computeOrderTotal,
   maskSensitiveFields,
 } from "@/lib/state-config";
-import { NMI_DESCRIPTOR } from "@/lib/nmi";
+import { paymentDescriptor } from "@/lib/whop";
 import {
   createOrReuseApplication,
   type StoredApplication,
@@ -150,7 +150,7 @@ export async function POST(req: Request) {
     payment: {
       transactionId: "pending",
       amount,
-      descriptor: NMI_DESCRIPTOR,
+      descriptor: paymentDescriptor(),
       devMode: true,
     },
     submittedAt: new Date().toISOString(),

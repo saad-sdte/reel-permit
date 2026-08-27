@@ -60,7 +60,7 @@ export async function POST(request: Request) {
   const secret = String(form.get("secret") ?? "");
   const secretOk = Boolean(process.env.ADMIN_PANEL_SECRET && secretMatches(secret));
   if (!sessionUser && !secretOk) {
-    return bad("Unauthorized — sign in to /admin or provide ADMIN_PANEL_SECRET.", 401);
+    return bad("Unauthorized — sign in to /cpanel/admin or provide ADMIN_PANEL_SECRET.", 401);
   }
 
   const to = String(form.get("to") ?? "").trim();
@@ -159,7 +159,7 @@ export async function POST(request: Request) {
       detail: { files: attachments.length, licenseNumber },
     });
 
-    // Branded ops copy (not the plain [AP Ops] text alert) + same PDF for the team.
+    // Branded ops copy (not the plain [RP Ops] text alert) + same PDF for the team.
     const opsTpl = buildLicenseDeliveredOpsEmail(ctx, deliveryInput);
     const admins = adminRecipients().filter((e) => e.toLowerCase() !== to.toLowerCase());
     if (admins.length) {
@@ -169,7 +169,7 @@ export async function POST(request: Request) {
           process.env.EMAIL_FROM ??
           "ReelPermit <licenses@reelpermit.local>",
         to: admins,
-        subject: `[AP Ops] ${opsTpl.subject}`,
+        subject: `[RP Ops] ${opsTpl.subject}`,
         html: opsTpl.html,
         text: opsTpl.text,
         attachments,

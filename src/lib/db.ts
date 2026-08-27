@@ -17,15 +17,15 @@ import { Pool, type QueryResult, type QueryResultRow } from "pg";
 
 declare global {
   // eslint-disable-next-line no-var
-  var __anglerpermitPgPool: Pool | null | undefined;
+  var __reelpermitPgPool: Pool | null | undefined;
 }
 
 export function getDb(): Pool | null {
-  if (globalThis.__anglerpermitPgPool !== undefined) return globalThis.__anglerpermitPgPool;
+  if (globalThis.__reelpermitPgPool !== undefined) return globalThis.__reelpermitPgPool;
 
   const url = process.env.DATABASE_URL?.trim();
   if (!url) {
-    globalThis.__anglerpermitPgPool = null;
+    globalThis.__reelpermitPgPool = null;
     return null;
   }
 
@@ -41,7 +41,7 @@ export function getDb(): Pool | null {
     console.error(`[db] idle client error: ${err.message}`);
   });
 
-  globalThis.__anglerpermitPgPool = pool;
+  globalThis.__reelpermitPgPool = pool;
   return pool;
 }
 

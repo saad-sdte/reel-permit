@@ -39,7 +39,7 @@ function nmiSecurityKey(): string | undefined {
   return v && v.trim() ? v.trim() : undefined;
 }
 
-export const NMI_DESCRIPTOR = process.env.NMI_DESCRIPTOR ?? "REELPERMIT";
+export const NMI_DESCRIPTOR = process.env.PAYMENT_DESCRIPTOR ?? process.env.NMI_DESCRIPTOR ?? "REELPERMIT";
 
 /** True when a real gateway key is configured (false = dev/simulated mode). */
 export function nmiConfigured(): boolean {

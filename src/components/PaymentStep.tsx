@@ -2,15 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { WhopCheckoutEmbed } from "@whop/checkout/react";
 import { CheckCircle2, CreditCard, HelpCircle, Loader2, Lock, ShieldCheck } from "lucide-react";
 import type { TokenizedPayment } from "@/lib/state-config";
-import {
-  initInlineCollectJs,
-  type InlineField,
-  nmiBrowserConfigured,
-  submitInlinePayment,
-  tokenizeCard,
-} from "@/lib/payment-client";
+import { tokenizeCard } from "@/lib/payment-client";
 import {
   billingZipError,
   BRAND_LABELS,
@@ -34,32 +29,28 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { useLocale } from "@/i18n/LocaleProvider";
 
-/**
- * Wizard payment step — NMI Collect.js tokenized checkout.
- *
- * Production (NEXT_PUBLIC_NMI_TOKENIZATION_KEY set): card PAN/expiry/CVV are
- * collected in NMI's hosted lightbox. We only keep billing ZIP in our DOM.
- *
- * Dev (key unset): local card fields + tok_dev_* simulation.
- */
-
 type FieldKey = "number" | "expiry" | "cvv" | "zip";
 
-/** DOM ids for the inline Collect.js iframe containers. */
-const COLLECT_IDS: Record<InlineField, string> = {
-  ccnumber: "ap-cc-number",
-  ccexp: "ap-cc-exp",
-  cvv: "ap-cc-cvv",
+export type CheckoutStartResult = {
+  ok?: boolean;
+  awaitingPayment?: boolean;
+  useLocalCard?: boolean;
+  alreadyPaid?: boolean;
+  duplicate?: boolean;
+  checkoutSessionId?: string;
+  planId?: string | null;
+  applicationId?: string | null;
+  reference?: string;
+  amount?: number;
+  message?: string;
 };
 
-/** Fallback messages when an embedded field is empty/untouched on submit. */
-const FIELD_REQUIRED: Record<InlineField, string> = {
-  ccnumber: "Card number is required",
-  ccexp: "Expiry date is required",
-  cvv: "Security code is required",
+export type PaidResult = {
+  reference: string;
+  email?: string | null;
+  amount: number;
 };
 
-/** Small brand badge shown inside the card-number field (dev mode). */
 function BrandBadge({ brand }: { brand: CardBrand }) {
   if (brand === "unknown") {
     return <CreditCard className="h-5 w-5 text-slate-400" aria-hidden="true" />;
@@ -86,7 +77,6 @@ function BrandBadge({ brand }: { brand: CardBrand }) {
   );
 }
 
-/** Static row of accepted card brands — a small, familiar trust signal. */
 function AcceptedCards() {
   return (
     <div className="flex items-center gap-1.5" aria-label="Accepted cards: Visa, Mastercard, American Express, Discover">
@@ -97,56 +87,25 @@ function AcceptedCards() {
   );
 }
 
-/**
- * Styled shell for an inline Collect.js field. Collect.js injects its secure
- * iframe into the `id` container; the border / padding / focus ring are ours so
- * the embedded field matches the rest of the form.
- */
-function CollectFieldFrame({
-  id,
-  label,
-  error,
-  ready,
-  rightAdornment,
-}: {
-  id: string;
-  label: string;
-  error?: string;
-  ready: boolean;
-  rightAdornment?: React.ReactNode;
-}) {
-  return (
-    <div>
-      <label className="mb-1.5 block text-sm font-medium text-navy">
-        {label}
-        <span className="ml-1 text-red-600" aria-hidden="true">
-          *
-        </span>
-      </label>
-      <div className="relative">
-        <div
-          id={id}
-          className={`ap-collect-field flex min-h-[46px] items-center rounded-lg border bg-white px-3.5 shadow-sm transition focus-within:ring-2 ${error
-              ? "border-red-500 focus-within:border-red-500 focus-within:ring-red-500/20"
-              : "border-slate-300 focus-within:border-forest-500 focus-within:ring-forest-500/30"
-            } ${rightAdornment ? "pr-11" : ""} ${ready ? "" : "opacity-60"}`}
-        />
-        {!ready && (
-          <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
-            <Loader2 className="h-4 w-4 animate-spin text-slate-400" aria-hidden="true" />
-          </div>
-        )}
-        {ready && rightAdornment && (
-          <div className="absolute inset-y-0 right-0 flex items-center pr-3">{rightAdornment}</div>
-        )}
-      </div>
-      {error && (
-        <p role="alert" className="mt-1.5 text-sm font-medium text-red-600">
-          {error}
-        </p>
-      )}
-    </div>
-  );
+async function waitForPaid(applicationId: string): Promise<PaidResult | null> {
+  for (let i = 0; i < 16; i++) {
+    const res = await fetch(`/api/checkout/status?applicationId=${encodeURIComponent(applicationId)}`);
+    const json = (await res.json()) as {
+      paid?: boolean;
+      reference?: string;
+      email?: string | null;
+      amount?: number;
+    };
+    if (res.ok && json.paid && json.reference) {
+      return {
+        reference: json.reference,
+        email: json.email,
+        amount: typeof json.amount === "number" ? json.amount : 0,
+      };
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1200));
+  }
+  return null;
 }
 
 export function PaymentStep({
@@ -154,6 +113,9 @@ export function PaymentStep({
   processing,
   error,
   onPay,
+  onStartCheckout,
+  onPaid,
+  applicantEmail,
   licenseSummary,
   compact,
 }: {
@@ -161,15 +123,14 @@ export function PaymentStep({
   stateName: string;
   processing: boolean;
   error: string | null;
-  /** Called with tokenized card + optional promo code applied at checkout. */
   onPay: (payment: TokenizedPayment, promoCode?: string | null) => void;
-  /** Optional selected-license strip above the card fields (CA competitor layout). */
+  onStartCheckout: (promoCode?: string | null) => Promise<CheckoutStartResult>;
+  onPaid: (result: PaidResult) => void;
+  applicantEmail?: string;
   licenseSummary?: { name: string; price: number } | null;
-  /** Slimmer chrome for competitor-style checkout pages. */
   compact?: boolean;
 }) {
   const { t } = useLocale();
-  const liveNmi = nmiBrowserConfigured();
   const showPromo = isTestPromoUiEnabled();
   const [number, setNumber] = useState("");
   const [expiry, setExpiry] = useState("");
@@ -182,82 +143,64 @@ export function PaymentStep({
   const [errors, setErrors] = useState<Partial<Record<FieldKey, string>>>({});
   const [tokenizing, setTokenizing] = useState(false);
   const [tokenizeError, setTokenizeError] = useState<string | null>(null);
+  const [starting, setStarting] = useState(true);
+  const [whopSessionId, setWhopSessionId] = useState<string | null>(null);
+  const [whopPlanId, setWhopPlanId] = useState<string | null>(null);
+  const [applicationId, setApplicationId] = useState<string | null>(null);
+  const [pendingReference, setPendingReference] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState(false);
 
-  // Inline (embedded) Collect.js state — production only.
-  const [ready, setReady] = useState(false);
-  const [liveErrors, setLiveErrors] = useState<Partial<Record<InlineField, string>>>({});
-  const [initError, setInitError] = useState<string | null>(null);
-  const fieldValidRef = useRef<Record<InlineField, boolean>>({
-    ccnumber: false,
-    ccexp: false,
-    cvv: false,
-  });
-  const onPayRef = useRef(onPay);
-  onPayRef.current = onPay;
-  const zipRef = useRef(zip);
-  zipRef.current = zip;
-  const appliedPromoRef = useRef(appliedPromo);
-  appliedPromoRef.current = appliedPromo;
+  const onStartRef = useRef(onStartCheckout);
+  onStartRef.current = onStartCheckout;
+  const onPaidRef = useRef(onPaid);
+  onPaidRef.current = onPaid;
 
   const brand = useMemo(() => detectBrand(number), [number]);
-  const busy = processing || tokenizing;
+  const busy = processing || tokenizing || starting || confirming;
   const { amount: chargeTotal } = applyPromoCode(total, appliedPromo);
+  const liveWhop = Boolean(whopSessionId || whopPlanId);
 
   useEffect(() => {
-    if (!liveNmi) return;
     let cancelled = false;
-    initInlineCollectJs({
-      selectors: {
-        ccnumber: `#${COLLECT_IDS.ccnumber}`,
-        ccexp: `#${COLLECT_IDS.ccexp}`,
-        cvv: `#${COLLECT_IDS.cvv}`,
-      },
-      onReady: () => {
-        if (!cancelled) setReady(true);
-      },
-      onValidity: (field, valid, message) => {
-        fieldValidRef.current[field] = valid;
+    setStarting(true);
+    setTokenizeError(null);
+    onStartRef
+      .current(appliedPromo)
+      .then((result) => {
         if (cancelled) return;
-        setLiveErrors((e) => ({ ...e, [field]: valid ? undefined : message || FIELD_REQUIRED[field] }));
-      },
-      onToken: (card) => {
-        if (cancelled) return;
-        console.log("Payment tokenized:", {
-          token: card.token,
-          last4: card.last4,
-          brand: card.brand,
-          billingZip: zipRef.current.trim(),
-        });
-        setTokenizing(false);
-        onPayRef.current(
-          {
-            token: card.token,
-            last4: card.last4,
-            brand: card.brand ? card.brand.charAt(0).toUpperCase() + card.brand.slice(1) : "",
-            billingZip: zipRef.current.trim(),
-          },
-          appliedPromoRef.current,
-        );
-      },
-      onError: (message) => {
-        if (cancelled) return;
-        setTokenizing(false);
-        setTokenizeError(message);
-      },
-      onTimeout: () => {
-        if (cancelled) return;
-        setTokenizing(false);
-        setTokenizeError("That took longer than expected — check your card details and try again.");
-      },
-    }).catch(() => {
-      if (!cancelled) {
-        setInitError("Secure payment fields could not load. Refresh the page and try again.");
-      }
-    });
+        if (result.applicationId) setApplicationId(result.applicationId);
+        if (result.reference) setPendingReference(result.reference);
+        if (result.reference && (result.alreadyPaid || result.duplicate)) {
+          onPaidRef.current({
+            reference: result.reference,
+            email: applicantEmail ?? null,
+            amount: typeof result.amount === "number" ? result.amount : chargeTotal,
+          });
+          return;
+        }
+        if (result.awaitingPayment && (result.checkoutSessionId || result.planId)) {
+          setWhopSessionId(result.checkoutSessionId ?? null);
+          setWhopPlanId(result.planId ?? null);
+          return;
+        }
+        if (result.ok === false) {
+          setTokenizeError(result.message ?? "Payment could not be started. Please try again.");
+        }
+        setWhopSessionId(null);
+        setWhopPlanId(null);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setTokenizeError("We could not reach the server. Check your connection and try again.");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setStarting(false);
+      });
     return () => {
       cancelled = true;
     };
-  }, [liveNmi]);
+  }, [appliedPromo]);
 
   function validateField(key: FieldKey) {
     const message =
@@ -272,41 +215,9 @@ export function PaymentStep({
     return message === null;
   }
 
-  async function handlePay() {
+  async function handleLocalPay() {
     if (busy) return;
     setTokenizeError(null);
-
-    if (liveNmi) {
-      if (initError) {
-        setTokenizeError(initError);
-        return;
-      }
-      const zipMessage = billingZipError(zip);
-      setErrors((e) => ({ ...e, zip: zipMessage ?? undefined }));
-
-      // Surface any embedded card fields that aren't valid yet.
-      const nextLive: Partial<Record<InlineField, string>> = {};
-      for (const f of ["ccnumber", "ccexp", "cvv"] as InlineField[]) {
-        if (!fieldValidRef.current[f]) nextLive[f] = liveErrors[f] ?? FIELD_REQUIRED[f];
-      }
-      const hasCardErrors = Object.keys(nextLive).length > 0;
-      if (hasCardErrors) setLiveErrors((e) => ({ ...e, ...nextLive }));
-
-      if (!ready) {
-        setTokenizeError("Secure payment fields are still loading — one moment.");
-        return;
-      }
-      if (zipMessage || hasCardErrors) {
-        document.querySelector<HTMLElement>('[data-payment-fields] [aria-invalid="true"]')?.focus();
-        return;
-      }
-
-      // Collect.js validates the iframes and returns the token via onToken.
-      setTokenizing(true);
-      submitInlinePayment();
-      return;
-    }
-
     const nextErrors: Partial<Record<FieldKey, string>> = {};
     for (const key of ["number", "expiry", "cvv", "zip"] as FieldKey[]) {
       const message =
@@ -353,6 +264,21 @@ export function PaymentStep({
     }
   }
 
+  async function handleWhopComplete() {
+    setConfirming(true);
+    setTokenizeError(null);
+    try {
+      const paid = applicationId ? await waitForPaid(applicationId) : null;
+      onPaidRef.current({
+        reference: paid?.reference ?? pendingReference ?? "RP-PENDING",
+        email: paid?.email ?? applicantEmail ?? null,
+        amount: paid?.amount && paid.amount > 0 ? paid.amount : chargeTotal,
+      });
+    } finally {
+      setConfirming(false);
+    }
+  }
+
   function handleApplyPromo() {
     const normalized = normalizePromoCode(promoInput);
     if (!normalized) {
@@ -369,6 +295,32 @@ export function PaymentStep({
       setPromoMessage("That promo code is not valid.");
     }
   }
+
+  const embedProps = {
+    theme: "light" as const,
+    skipRedirect: true,
+    hidePrice: true,
+    hideAddressForm: true,
+    hideEmail: Boolean(applicantEmail),
+    disableEmail: Boolean(applicantEmail),
+    prefill: applicantEmail ? { email: applicantEmail } : undefined,
+    themeOptions: {
+      accentColor: "#16332b",
+      borderRadius: 8,
+      buttonText: `Pay ${formatPrice(chargeTotal)}`,
+    },
+    onComplete: () => {
+      void handleWhopComplete();
+    },
+    onPaymentError: (err: { message: string }) => {
+      setTokenizeError(err.message || "Your payment could not be completed. Please try a different card.");
+    },
+    fallback: (
+      <div className="flex min-h-[220px] items-center justify-center rounded-xl border border-slate-200 bg-slate-50">
+        <Loader2 className="h-5 w-5 animate-spin text-slate-400" aria-hidden="true" />
+      </div>
+    ),
+  };
 
   return (
     <Card
@@ -407,170 +359,146 @@ export function PaymentStep({
             <p className="text-lg font-bold text-navy">{formatPrice(licenseSummary.price)}</p>
           </div>
         )}
-        <div data-payment-fields className="grid gap-5 sm:grid-cols-2">
-          <div className={`sm:col-span-2 rounded-2xl border border-forest-200 bg-gradient-to-br from-forest-50 via-white to-sky-50 px-4 py-4 ${compact ? "hidden" : ""}`}>
-            <div className="flex gap-3">
-              <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-forest-100">
-                <ShieldCheck className="h-5 w-5 text-forest-700" aria-hidden="true" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-navy">Secure card entry</p>
-                <p className="mt-1 text-sm leading-relaxed text-slate-600">
-                  {liveNmi
-                    ? "Enter your card in the secure fields below. Your details are encrypted and tokenized by our payment processor — they never touch ReelPermit's servers."
-                    : "Your card details are encrypted and tokenized by our payment processor — they never touch ReelPermit's servers."}
-                </p>
-                <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-medium text-slate-600">
-                  <span className="inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 ring-1 ring-slate-200">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-forest-600" aria-hidden="true" />
-                    Hosted by our processor
-                  </span>
-                  <span className="inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 ring-1 ring-slate-200">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-forest-600" aria-hidden="true" />
-                    One-time tokenized payment
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 ring-1 ring-slate-200">
-                    <AcceptedCards />
-                  </span>
-                </div>
+
+        <div className={`rounded-2xl border border-forest-200 bg-gradient-to-br from-forest-50 via-white to-sky-50 px-4 py-4 ${compact ? "hidden" : ""}`}>
+          <div className="flex gap-3">
+            <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-forest-100">
+              <ShieldCheck className="h-5 w-5 text-forest-700" aria-hidden="true" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-navy">Secure card entry</p>
+              <p className="mt-1 text-sm leading-relaxed text-slate-600">
+                {liveWhop
+                  ? "Enter your card in the secure fields below. Your details are encrypted by Whop and never touch ReelPermit's servers."
+                  : "Your card details are tokenized locally in development. Production checkout uses Whop."}
+              </p>
+              <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-medium text-slate-600">
+                <span className="inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 ring-1 ring-slate-200">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-forest-600" aria-hidden="true" />
+                  Hosted by our processor
+                </span>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 ring-1 ring-slate-200">
+                  <AcceptedCards />
+                </span>
               </div>
             </div>
           </div>
+        </div>
 
-          {liveNmi ? (
-            <>
-              <div className="sm:col-span-2">
-                <CollectFieldFrame
-                  id={COLLECT_IDS.ccnumber}
-                  label={t("pay.cardNumber")}
-                  error={liveErrors.ccnumber}
-                  ready={ready}
-                  rightAdornment={<CreditCard className="h-5 w-5 text-slate-400" aria-hidden="true" />}
-                />
-              </div>
-              <CollectFieldFrame
-                id={COLLECT_IDS.ccexp}
-                label={t("pay.expiry")}
-                error={liveErrors.ccexp}
-                ready={ready}
+        {starting ? (
+          <div className="mt-5 flex min-h-[160px] items-center justify-center rounded-xl border border-slate-200 bg-slate-50">
+            <p className="inline-flex items-center gap-2 text-sm text-slate-600">
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              Preparing secure checkout…
+            </p>
+          </div>
+        ) : liveWhop ? (
+          <div className="mt-5">
+            {whopSessionId?.startsWith("chs_") || !whopPlanId ? (
+              <WhopCheckoutEmbed sessionId={whopSessionId!} {...embedProps} />
+            ) : (
+              <WhopCheckoutEmbed planId={whopPlanId} {...embedProps} />
+            )}
+            {confirming && (
+              <p className="mt-3 inline-flex items-center gap-2 text-sm text-slate-600">
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                Confirming your payment…
+              </p>
+            )}
+          </div>
+        ) : (
+          <div data-payment-fields className="mt-5 grid gap-5 sm:grid-cols-2">
+            <div className="sm:col-span-2">
+              <Input
+                label={t("pay.cardNumber")}
+                name="cardNumber"
+                type="text"
+                inputMode="numeric"
+                autoComplete="cc-number"
+                placeholder="1234 5678 9012 3456"
+                value={number}
+                onChange={(e) => setNumber(formatCardNumber(e.target.value))}
+                onBlur={() => validateField("number")}
+                error={errors.number}
+                required
+                disabled={busy}
+                rightAdornment={<BrandBadge brand={brand} />}
               />
-              <CollectFieldFrame
-                id={COLLECT_IDS.cvv}
+            </div>
+            <Input
+              label={t("pay.expiry")}
+              name="cardExpiry"
+              type="text"
+              inputMode="numeric"
+              autoComplete="cc-exp"
+              placeholder="MM/YY"
+              value={expiry}
+              onChange={(e) => setExpiry(formatExpiry(e.target.value))}
+              onBlur={() => validateField("expiry")}
+              error={errors.expiry}
+              required
+              disabled={busy}
+            />
+            <div className="relative">
+              <Input
                 label={t("pay.cvv")}
-                error={liveErrors.cvv}
-                ready={ready}
+                name="cardCvv"
+                type="password"
+                inputMode="numeric"
+                autoComplete="cc-csc"
+                placeholder={brand === "amex" ? "4 digits" : "3 digits"}
+                value={cvv}
+                onChange={(e) => setCvv(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                onBlur={() => validateField("cvv")}
+                error={errors.cvv}
+                required
+                disabled={busy}
                 rightAdornment={
                   <span className="group relative inline-flex">
-                    <span
+                    <button
+                      type="button"
                       aria-label="Where is my security code?"
-                      className="rounded p-1 text-slate-400"
+                      className="rounded p-1 text-slate-400 hover:text-navy focus-visible:text-navy"
                     >
                       <HelpCircle className="h-5 w-5" aria-hidden="true" />
-                    </span>
+                    </button>
                     <span
                       role="tooltip"
-                      className="pointer-events-none absolute bottom-full right-0 z-10 mb-2 w-56 rounded-lg bg-navy px-3 py-2 text-xs leading-relaxed text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100"
+                      className="pointer-events-none absolute bottom-full right-0 z-10 mb-2 w-56 rounded-lg bg-navy px-3 py-2 text-xs leading-relaxed text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
                     >
-                      The 3–4 digit code on your card (back for most cards, front for Amex).
+                      {brand === "amex"
+                        ? "American Express: the 4-digit code printed on the front of your card."
+                        : "The 3-digit code in the signature panel on the back of your card."}
                     </span>
                   </span>
                 }
               />
-            </>
-          ) : (
-            <>
-              <div className="sm:col-span-2">
-                <Input
-                  label={t("pay.cardNumber")}
-                  name="cardNumber"
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete="cc-number"
-                  placeholder="1234 5678 9012 3456"
-                  value={number}
-                  onChange={(e) => setNumber(formatCardNumber(e.target.value))}
-                  onBlur={() => validateField("number")}
-                  error={errors.number}
-                  required
-                  disabled={busy}
-                  rightAdornment={<BrandBadge brand={brand} />}
-                />
-              </div>
+            </div>
+            <div className="sm:col-span-2">
               <Input
-                label={t("pay.expiry")}
-                name="cardExpiry"
+                label={t("pay.billingZip")}
+                name="billingZip"
                 type="text"
                 inputMode="numeric"
-                autoComplete="cc-exp"
-                placeholder="MM/YY"
-                value={expiry}
-                onChange={(e) => setExpiry(formatExpiry(e.target.value))}
-                onBlur={() => validateField("expiry")}
-                error={errors.expiry}
+                autoComplete="postal-code"
+                placeholder="12345"
+                value={zip}
+                onChange={(e) => setZip(e.target.value.replace(/[^\d-]/g, "").slice(0, 10))}
+                onBlur={() => validateField("zip")}
+                error={errors.zip}
                 required
                 disabled={busy}
               />
-              <div className="relative">
-                <Input
-                  label={t("pay.cvv")}
-                  name="cardCvv"
-                  type="password"
-                  inputMode="numeric"
-                  autoComplete="cc-csc"
-                  placeholder={brand === "amex" ? "4 digits" : "3 digits"}
-                  value={cvv}
-                  onChange={(e) => setCvv(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                  onBlur={() => validateField("cvv")}
-                  error={errors.cvv}
-                  required
-                  disabled={busy}
-                  rightAdornment={
-                    <span className="group relative inline-flex">
-                      <button
-                        type="button"
-                        aria-label="Where is my security code?"
-                        className="rounded p-1 text-slate-400 hover:text-navy focus-visible:text-navy"
-                      >
-                        <HelpCircle className="h-5 w-5" aria-hidden="true" />
-                      </button>
-                      <span
-                        role="tooltip"
-                        className="pointer-events-none absolute bottom-full right-0 z-10 mb-2 w-56 rounded-lg bg-navy px-3 py-2 text-xs leading-relaxed text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
-                      >
-                        {brand === "amex"
-                          ? "American Express: the 4-digit code printed on the front of your card."
-                          : "The 3-digit code in the signature panel on the back of your card."}
-                      </span>
-                    </span>
-                  }
-                />
-              </div>
-            </>
-          )}
-          <div className="sm:col-span-2">
-            <Input
-              label={t("pay.billingZip")}
-              name="billingZip"
-              type="text"
-              inputMode="numeric"
-              autoComplete="postal-code"
-              placeholder="12345"
-              value={zip}
-              onChange={(e) => setZip(e.target.value.replace(/[^\d-]/g, "").slice(0, 10))}
-              onBlur={() => validateField("zip")}
-              error={errors.zip}
-              required
-              disabled={busy}
-            />
+            </div>
           </div>
-        </div>
+        )}
 
-        {(tokenizeError || error || initError) && (
+        {(tokenizeError || error) && (
           <div
             role="alert"
             className="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700"
           >
-            {tokenizeError ?? error ?? initError}
+            {tokenizeError ?? error}
           </div>
         )}
 
@@ -586,26 +514,28 @@ export function PaymentStep({
           and authorize ReelPermit to charge your credit card.
         </p>
 
-        <Button
-          variant="accent"
-          size="lg"
-          className="mt-5 w-full min-h-[48px] rounded-xl bg-gradient-to-r from-forest-600 to-forest-500 text-base shadow-[0_12px_30px_-12px_rgba(22,163,74,0.7)] hover:from-forest-500 hover:to-forest-400"
-          onClick={handlePay}
-          disabled={busy}
-          aria-live="polite"
-        >
-          {busy ? (
-            <>
-              <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
-              {t("pay.processing")}
-            </>
-          ) : (
-            <>
-              <Lock className="h-4 w-4" aria-hidden="true" />
-              {t("pay.payNow", { amount: formatPrice(chargeTotal) })}
-            </>
-          )}
-        </Button>
+        {!liveWhop && !starting && (
+          <Button
+            variant="accent"
+            size="lg"
+            className="mt-5 w-full min-h-[48px] rounded-xl bg-gradient-to-r from-forest-600 to-forest-500 text-base shadow-[0_12px_30px_-12px_rgba(22,163,74,0.7)] hover:from-forest-500 hover:to-forest-400"
+            onClick={() => void handleLocalPay()}
+            disabled={busy}
+            aria-live="polite"
+          >
+            {busy ? (
+              <>
+                <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
+                {t("pay.processing")}
+              </>
+            ) : (
+              <>
+                <Lock className="h-4 w-4" aria-hidden="true" />
+                {t("pay.payNow", { amount: formatPrice(chargeTotal) })}
+              </>
+            )}
+          </Button>
+        )}
         <p className="mt-3 flex items-center justify-center gap-2 text-xs text-slate-500">
           <Lock className="h-3.5 w-3.5" aria-hidden="true" />
           Your card is charged once, and your receipt shows &ldquo;REELPERMIT&rdquo;.
@@ -645,12 +575,7 @@ export function PaymentStep({
                       disabled={busy}
                     />
                   </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleApplyPromo}
-                    disabled={busy}
-                  >
+                  <Button type="button" variant="outline" onClick={handleApplyPromo} disabled={busy}>
                     Apply
                   </Button>
                 </div>

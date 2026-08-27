@@ -1,6 +1,7 @@
 import { ObjectId, type Collection } from "mongodb";
 import { randomBytes, scryptSync, timingSafeEqual } from "crypto";
 import { getMongoDb, mongoConfigured } from "@/lib/mongo";
+import { adminPath } from "@/lib/admin-paths";
 import { deliver } from "@/lib/email/pipeline";
 
 export type AdminUserRole = "admin" | "user";
@@ -24,14 +25,14 @@ export type PublicAdminUser = Omit<AdminUserDoc, "passwordHash">;
 
 declare global {
   // eslint-disable-next-line no-var
-  var __anglerAdminUsersMem: Map<string, AdminUserDoc> | undefined;
+  var __reelpermitAdminUsersMem: Map<string, AdminUserDoc> | undefined;
 }
 
 function mem() {
-  if (!globalThis.__anglerAdminUsersMem) {
-    globalThis.__anglerAdminUsersMem = new Map();
+  if (!globalThis.__reelpermitAdminUsersMem) {
+    globalThis.__reelpermitAdminUsersMem = new Map();
   }
-  return globalThis.__anglerAdminUsersMem;
+  return globalThis.__reelpermitAdminUsersMem;
 }
 
 function nowIso() {
@@ -63,7 +64,7 @@ export function verifyPassword(password: string, stored: string): boolean {
 export function generateTempPassword(): string {
   // Readable + strong enough for invite flow (user should change later).
   const raw = randomBytes(9).toString("base64url");
-  return `Ap-${raw.slice(0, 12)}`;
+  return `Rp-${raw.slice(0, 12)}`;
 }
 
 function toPublic(u: AdminUserDoc): PublicAdminUser {
@@ -269,7 +270,7 @@ async function sendInviteEmail(args: {
   password: string;
 }): Promise<{ delivered: boolean; error?: string }> {
   const base = (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/$/, "");
-  const loginUrl = `${base}/admin/login`;
+  const loginUrl = `${base}${adminPath("/login")}`;
   const from =
     process.env.EMAIL_FROM_SUPPORT ||
     process.env.EMAIL_FROM ||
@@ -278,7 +279,7 @@ async function sendInviteEmail(args: {
   const text = [
     `Hi ${args.name},`,
     ``,
-    `You've been invited to the ReelPermit ops console.`,
+    `You've been invited to the ReelPermit control panel.`,
     ``,
     `Login URL: ${loginUrl}`,
     `Email: ${args.to}`,

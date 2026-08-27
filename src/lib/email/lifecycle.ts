@@ -1,8 +1,9 @@
 import type { StateConfig } from "@/lib/state-config";
 import { formatPrice } from "@/lib/format";
 import type { DeclineCode } from "@/lib/nmi";
-import { NMI_DESCRIPTOR } from "@/lib/nmi";
+import { paymentDescriptor } from "@/lib/whop";
 import {
+  BRAND,
   BUSINESS,
   detailCard,
   detailRow,
@@ -37,9 +38,9 @@ function env(name: string): string | undefined {
 
 const FROM = {
   applications: () =>
-    env("EMAIL_FROM_APPLICATIONS") ?? "ReelPermit <applications@reelpermit.local>",
-  receipts: () => env("EMAIL_FROM_RECEIPTS") ?? "ReelPermit <receipts@reelpermit.local>",
-  billing: () => env("EMAIL_FROM_BILLING") ?? "ReelPermit Billing <billing@reelpermit.local>",
+    env("EMAIL_FROM_APPLICATIONS") ?? "ReelPermit <applications@reelpermit.com>",
+  receipts: () => env("EMAIL_FROM_RECEIPTS") ?? "ReelPermit <receipts@reelpermit.com>",
+  billing: () => env("EMAIL_FROM_BILLING") ?? "ReelPermit Billing <billing@reelpermit.com>",
 };
 
 const replyTo = () => env("SUPPORT_REPLY_TO") ?? BUSINESS.supportEmail;
@@ -138,18 +139,18 @@ export function buildApplicationReceivedEmail(ctx: LifecycleCtx): BuiltEmail {
   const state = stateName(ctx);
   const lic = license(ctx);
   const applicant = applicantSection(ctx);
-  const subject = `We've received your ${state} fishing license application (${ctx.reference})`;
+  const subject = `ReelPermit has your ${state} file (${ctx.reference})`;
   const preheader =
-    "Our team is reviewing it now — most applications are processed within 1 business day.";
+    "Michigan desk is reviewing it — typical turnaround is one business day.";
 
   const steps = stepsBlock([
     {
-      title: "We review your application",
-      body: "A specialist checks every detail — typically within 1 business day.",
+      title: "Desk review",
+      body: "We check the file against MDNR rules — typically within one business day.",
     },
     {
-      title: "Your license lands in your inbox",
-      body: "As soon as it's issued, we'll email it to you ready to print or save to your phone.",
+      title: "Official PDF in this inbox",
+      body: "After we purchase on eLicense, the state document is emailed here as an attachment.",
     },
   ]);
 
@@ -165,29 +166,28 @@ export function buildApplicationReceivedEmail(ctx: LifecycleCtx): BuiltEmail {
   ].join("");
 
   const bodyHtml = `
-    <h1 style="margin:0 0 14px;font-size:23px;line-height:1.3;font-weight:700;color:#0A2540;">Your application is in ✓</h1>
+    <h1 style="margin:0 0 14px;font-size:23px;line-height:1.3;font-weight:700;color:${BRAND.navy};">File is on the Michigan desk</h1>
     <p style="margin:0 0 12px;font-size:15px;line-height:1.6;color:#475569;">Hi ${esc(greetingName(ctx))},</p>
     <p style="margin:0 0 6px;font-size:15px;line-height:1.6;color:#475569;">
-      Thanks for choosing ReelPermit. Your ${esc(state)} fishing license application is in —
-      here's exactly what happens next:
+      ReelPermit received your ${esc(state)} fishing-license file. We submit to MDNR — we do not issue licenses.
+      Next:
     </p>
     ${steps}
     ${detailCard(rows, { heading: "Application summary" })}
     ${applicant.html}
     <p style="margin:18px 0 0;font-size:14px;line-height:1.6;color:#475569;">
-      <strong style="color:#0A2540;">Nothing else is needed from you right now.</strong>
-      If anything in your application needs a correction, reply to this email and we'll fix it
-      before we process it.
+      <strong style="color:${BRAND.navy};">Nothing else is needed from you unless we write back.</strong>
+      If a field is wrong, reply to this email before we submit it to MDNR.
     </p>
-    <p style="margin:12px 0 0;font-size:13px;line-height:1.6;color:#64748B;">Your receipt is in a separate email.</p>`;
+    <p style="margin:12px 0 0;font-size:13px;line-height:1.6;color:#64748B;">The charge receipt is a separate email.</p>`;
 
   const text = [
     `Hi ${greetingName(ctx)},`,
     "",
-    `Thanks for choosing ReelPermit. Your ${state} fishing license application is in — here's exactly what happens next:`,
+    `ReelPermit received your ${state} fishing-license file. We submit to MDNR — we do not issue licenses. Next:`,
     "",
-    "1. We review your application — a specialist checks every detail, typically within 1 business day.",
-    "2. Your license lands in your inbox — ready to print or save to your phone.",
+    "1. Desk review — typically within one business day.",
+    "2. Official PDF in this inbox after we purchase on eLicense.",
     "",
     "APPLICATION SUMMARY",
     `Reference:   ${ctx.reference}`,
@@ -201,8 +201,8 @@ export function buildApplicationReceivedEmail(ctx: LifecycleCtx): BuiltEmail {
     "",
     ...applicant.textLines,
     ...(applicant.textLines.length ? [""] : []),
-    "Nothing else is needed from you right now. If anything needs a correction, just reply to this email.",
-    "Your receipt is in a separate email.",
+    "Nothing else is needed unless we write back. If a field is wrong, reply before we submit to MDNR.",
+    "The charge receipt is a separate email.",
     textFooter({ reference: ctx.reference }),
   ].join("\n");
 
@@ -211,7 +211,7 @@ export function buildApplicationReceivedEmail(ctx: LifecycleCtx): BuiltEmail {
     html: emailShell({
       preheader,
       bodyHtml,
-      banner: { tone: "info", text: "Application received" },
+      banner: { tone: "info", text: "File received" },
       footerReference: ctx.reference,
       campaign: "application_received",
     }),
@@ -248,7 +248,7 @@ export interface ReceiptPayment {
 export function buildPaymentReceiptEmail(ctx: LifecycleCtx, pay: ReceiptPayment): BuiltEmail {
   const applicant = applicantSection(ctx);
   // Leading fish emoji distinguishes ReelPermit receipts from other brand inboxes.
-  const subject = `🐟 Your ReelPermit receipt — ${formatPrice(ctx.amount)} (${ctx.reference})`;
+  const subject = `ReelPermit receipt — ${formatPrice(ctx.amount)} (${ctx.reference})`;
   const preheader = "Payment confirmed. Fully refundable until your license purchase is completed.";
 
   // Receipt shows only the amount actually charged — no fee itemization.
@@ -264,7 +264,7 @@ export function buildPaymentReceiptEmail(ctx: LifecycleCtx, pay: ReceiptPayment)
   const itemRows = detailRow("Total charged", esc(formatPrice(ctx.amount)), { strong: true });
 
   const bodyHtml = `
-    <h1 style="margin:0 0 14px;font-size:23px;line-height:1.3;font-weight:700;color:#0A2540;">Payment receipt</h1>
+    <h1 style="margin:0 0 14px;font-size:23px;line-height:1.3;font-weight:700;color:${BRAND.navy};">Payment receipt</h1>
     <p style="margin:0 0 12px;font-size:15px;line-height:1.6;color:#475569;">Hi ${esc(greetingName(ctx))},</p>
     <p style="margin:0;font-size:15px;line-height:1.6;color:#475569;">
       Your payment went through successfully. Keep this receipt for your records.
@@ -273,10 +273,10 @@ export function buildPaymentReceiptEmail(ctx: LifecycleCtx, pay: ReceiptPayment)
     ${detailCard(itemRows, { heading: "Receipt" })}
     ${applicant.html}
     <p style="margin:16px 0 0;font-size:13px;line-height:1.6;color:#64748B;">
-      This charge will appear on your statement as <strong style="color:#0A2540;">${esc(NMI_DESCRIPTOR)}</strong>.
+      This charge will appear on your statement as <strong style="color:${BRAND.navy};">${esc(paymentDescriptor())}</strong>.
     </p>
     <p style="margin:12px 0 0;font-size:13px;line-height:1.6;color:#64748B;">
-      <strong style="color:#0A2540;">Refund policy:</strong> your payment is fully refundable any
+      <strong style="color:${BRAND.navy};">Refund policy:</strong> your payment is fully refundable any
       time before we complete your license purchase with the state. After that, the state fee is
       non-refundable per state rules — see our
       <a href="${utmLink("/refund", "payment_receipt")}" style="color:#175CD3;">Refund Policy</a>.
@@ -298,7 +298,7 @@ export function buildPaymentReceiptEmail(ctx: LifecycleCtx, pay: ReceiptPayment)
     "",
     ...applicant.textLines,
     ...(applicant.textLines.length ? [""] : []),
-    `This charge will appear on your statement as ${NMI_DESCRIPTOR}.`,
+    `This charge will appear on your statement as ${paymentDescriptor()}.`,
     "",
     "Refund policy: your payment is fully refundable any time before we complete your license purchase with the state. After that, the state fee is non-refundable per state rules.",
     textFooter({ reference: ctx.reference }),
@@ -380,7 +380,7 @@ export interface DeclinedEmailInput {
 export function buildPaymentDeclinedEmail(ctx: LifecycleCtx, input: DeclinedEmailInput): BuiltEmail {
   const state = stateName(ctx);
   const applicant = applicantSection(ctx);
-  const subject = `Action needed: your payment didn't go through (${ctx.reference})`;
+  const subject = `Card declined — file ${ctx.reference} is waiting`;
   const preheader =
     "No charge was made. It takes about 60 seconds to try again with the same or a different card.";
   const hint = DECLINE_HINTS[input.declineCode] ?? DECLINE_HINTS.generic_decline;
@@ -388,11 +388,11 @@ export function buildPaymentDeclinedEmail(ctx: LifecycleCtx, input: DeclinedEmai
   const retryUrl = input.retryUrl ?? utmLink(`/${ctx.stateSlug}`, "payment_declined");
 
   const bodyHtml = `
-    <h1 style="margin:0 0 14px;font-size:23px;line-height:1.3;font-weight:700;color:#0A2540;">Your payment didn't go through</h1>
+    <h1 style="margin:0 0 14px;font-size:23px;line-height:1.3;font-weight:700;color:${BRAND.navy};">The card did not go through</h1>
     <p style="margin:0 0 12px;font-size:15px;line-height:1.6;color:#475569;">Hi ${esc(greetingName(ctx))},</p>
     <p style="margin:0 0 12px;font-size:15px;line-height:1.6;color:#475569;">
-      We couldn't process your payment of <strong style="color:#0A2540;">${esc(formatPrice(ctx.amount))}</strong>
-      for your ${esc(state)} fishing license application — <strong style="color:#0A2540;">you have not
+      We couldn't process your payment of <strong style="color:${BRAND.navy};">${esc(formatPrice(ctx.amount))}</strong>
+      for your ${esc(state)} fishing license application — <strong style="color:${BRAND.navy};">you have not
       been charged</strong>, and your application is saved and waiting.
     </p>
     <p style="margin:0;font-size:15px;line-height:1.6;color:#475569;">${esc(hint)}</p>
@@ -400,7 +400,7 @@ export function buildPaymentDeclinedEmail(ctx: LifecycleCtx, input: DeclinedEmai
     <p style="margin:6px 0 0;text-align:center;font-size:12px;color:#64748B;">Takes about 60 seconds · card details are never stored on our servers</p>
     ${applicant.html}
     <p style="margin:20px 0 0;font-size:14px;line-height:1.6;color:#475569;">
-      We'll hold your application until <strong style="color:#0A2540;">${esc(holdDate)}</strong> (7 days).
+      We'll hold your application until <strong style="color:${BRAND.navy};">${esc(holdDate)}</strong> (7 days).
       After that it's cancelled automatically and nothing is charged.
     </p>
     <p style="margin:12px 0 0;font-size:13px;line-height:1.6;color:#64748B;">
@@ -493,7 +493,7 @@ function miniRecap(ctx: LifecycleCtx): string {
 export function buildReminder1Email(ctx: LifecycleCtx, input: DunningEmailInput): BuiltEmail {
   const state = stateName(ctx);
   const applicant = applicantSection(ctx);
-  const subject = `Your ${state} fishing license application is on hold (${ctx.reference})`;
+  const subject = `${state} file on hold — ${ctx.reference}`;
   const preheader = "Everything's ready on our side — completing payment takes about a minute.";
   const card = [input.cardBrand, input.cardLast4 ? `card ending ${input.cardLast4}` : "card"]
     .filter(Boolean)
@@ -501,7 +501,7 @@ export function buildReminder1Email(ctx: LifecycleCtx, input: DunningEmailInput)
   const holdDate = fmtDateET(input.holdExpiry);
 
   const bodyHtml = `
-    <h1 style="margin:0 0 14px;font-size:23px;line-height:1.3;font-weight:700;color:#0A2540;">Your application is on hold</h1>
+    <h1 style="margin:0 0 14px;font-size:23px;line-height:1.3;font-weight:700;color:${BRAND.navy};">This file is on hold</h1>
     <p style="margin:0 0 12px;font-size:15px;line-height:1.6;color:#475569;">Hi ${esc(greetingName(ctx))},</p>
     <p style="margin:0;font-size:15px;line-height:1.6;color:#475569;">
       Quick reminder: your ${esc(state)} fishing license application is complete and saved, but we
@@ -513,7 +513,7 @@ export function buildReminder1Email(ctx: LifecycleCtx, input: DunningEmailInput)
     ${miniRecap(ctx)}
     ${applicant.html}
     <p style="margin:18px 0 0;font-size:14px;line-height:1.6;color:#475569;">
-      Your application is held until <strong style="color:#0A2540;">${esc(holdDate)}</strong>.
+      Your application is held until <strong style="color:${BRAND.navy};">${esc(holdDate)}</strong>.
       Reply to this email if you'd like help or want to pay a different way.
     </p>`;
 
@@ -553,12 +553,12 @@ export function buildReminder1Email(ctx: LifecycleCtx, input: DunningEmailInput)
 export function buildReminder2Email(ctx: LifecycleCtx, input: DunningEmailInput): BuiltEmail {
   const state = stateName(ctx);
   const applicant = applicantSection(ctx);
-  const subject = `Still planning to fish in ${state}? (${ctx.reference})`;
+  const subject = `Still heading to Michigan? File ${ctx.reference} needs payment`;
   const preheader = "Your application expires in 3 days — finish payment in about a minute.";
   const holdDate = fmtDateET(input.holdExpiry);
 
   const bodyHtml = `
-    <h1 style="margin:0 0 14px;font-size:23px;line-height:1.3;font-weight:700;color:#0A2540;">Still planning to fish in ${esc(state)}?</h1>
+    <h1 style="margin:0 0 14px;font-size:23px;line-height:1.3;font-weight:700;color:${BRAND.navy};">Still heading to Michigan?</h1>
     <p style="margin:0 0 12px;font-size:15px;line-height:1.6;color:#475569;">Hi ${esc(greetingName(ctx))},</p>
     <p style="margin:0;font-size:15px;line-height:1.6;color:#475569;">
       Your ${esc(state)} fishing trip shouldn't get stuck on a card hiccup. Your application is
@@ -568,7 +568,7 @@ export function buildReminder2Email(ctx: LifecycleCtx, input: DunningEmailInput)
     ${ctaButton(input.retryUrl, `Complete payment — ${formatPrice(ctx.amount)}`)}
     ${applicant.html}
     <p style="margin:20px 0 0;font-size:14px;line-height:1.6;color:#475569;">
-      After <strong style="color:#0A2540;">${esc(holdDate)}</strong> the application expires and
+      After <strong style="color:${BRAND.navy};">${esc(holdDate)}</strong> the application expires and
       your details are removed from our processing queue. If you hit any trouble paying, reply —
       a real person will help you sort it out.
     </p>`;
@@ -605,23 +605,23 @@ export function buildReminder2Email(ctx: LifecycleCtx, input: DunningEmailInput)
 export function buildFinalNoticeEmail(ctx: LifecycleCtx, input: DunningEmailInput): BuiltEmail {
   const state = stateName(ctx);
   const applicant = applicantSection(ctx);
-  const subject = `Last day: application ${ctx.reference} expires tomorrow`;
+  const subject = `Last day for file ${ctx.reference}`;
   const holdDate = fmtDateET(input.holdExpiry);
   const preheader = `Complete payment today to keep your ${state} license application — otherwise it's cancelled automatically.`;
 
   const bodyHtml = `
-    <h1 style="margin:0 0 14px;font-size:23px;line-height:1.3;font-weight:700;color:#0A2540;">Your application expires tomorrow</h1>
+    <h1 style="margin:0 0 14px;font-size:23px;line-height:1.3;font-weight:700;color:${BRAND.navy};">This file closes tomorrow</h1>
     <p style="margin:0 0 12px;font-size:15px;line-height:1.6;color:#475569;">Hi ${esc(greetingName(ctx))},</p>
     <p style="margin:0;font-size:15px;line-height:1.6;color:#475569;">
       This is the last reminder we'll send. Your ${esc(state)} fishing license application
       (<span style="font-family:'SF Mono',SFMono-Regular,Consolas,Menlo,monospace;">${esc(ctx.reference)}</span>)
-      expires tomorrow, <strong style="color:#0A2540;">${esc(holdDate)}</strong>, and will be
+      expires tomorrow, <strong style="color:${BRAND.navy};">${esc(holdDate)}</strong>, and will be
       cancelled automatically. You haven't been charged anything.
     </p>
     ${ctaButton(input.retryUrl, `Complete payment now — ${formatPrice(ctx.amount)}`)}
     ${applicant.html}
     <p style="margin:20px 0 0;font-size:14px;line-height:1.6;color:#475569;">
-      <strong style="color:#0A2540;">If the card keeps declining:</strong> try a different card,
+      <strong style="color:${BRAND.navy};">If the card keeps declining:</strong> try a different card,
       or call the number on the back of your card — banks often clear the charge in one short
       call. Or just reply to this email and we'll figure it out together.
     </p>
@@ -667,16 +667,16 @@ export function buildFinalNoticeEmail(ctx: LifecycleCtx, input: DunningEmailInpu
 export function buildCancelledEmail(ctx: LifecycleCtx): BuiltEmail {
   const state = stateName(ctx);
   const applicant = applicantSection(ctx);
-  const subject = `Your application ${ctx.reference} has been cancelled`;
+  const subject = `File ${ctx.reference} closed — no charge`;
   const preheader = "Nothing was charged. You can restart in about 2 minutes whenever you're ready.";
   const newAppUrl = utmLink(`/${ctx.stateSlug}`, "application_cancelled");
 
   const bodyHtml = `
-    <h1 style="margin:0 0 14px;font-size:23px;line-height:1.3;font-weight:700;color:#0A2540;">Your application has been cancelled</h1>
+    <h1 style="margin:0 0 14px;font-size:23px;line-height:1.3;font-weight:700;color:${BRAND.navy};">This file is closed</h1>
     <p style="margin:0 0 12px;font-size:15px;line-height:1.6;color:#475569;">Hi ${esc(greetingName(ctx))},</p>
     <p style="margin:0;font-size:15px;line-height:1.6;color:#475569;">
       As planned, we've cancelled your ${esc(state)} fishing license application because payment
-      wasn't completed. <strong style="color:#0A2540;">You were not charged</strong>, and your
+      wasn't completed. <strong style="color:${BRAND.navy};">You were not charged</strong>, and your
       saved payment attempt details have been discarded. Remaining application data is deleted
       from our systems within 30 days per our
       <a href="${utmLink("/privacy", "application_cancelled")}" style="color:#175CD3;">Privacy Policy</a>.
@@ -788,10 +788,10 @@ function attachmentCallout(names: string[]): string {
     ? names
         .map(
           (n) =>
-            `<tr><td style="padding:6px 0;font-size:14px;font-weight:700;color:#0A2540;">📄 ${esc(n)}</td></tr>`,
+            `<tr><td style="padding:6px 0;font-size:14px;font-weight:700;color:${BRAND.navy};">📄 ${esc(n)}</td></tr>`,
         )
         .join("")
-    : `<tr><td style="padding:6px 0;font-size:14px;font-weight:700;color:#0A2540;">📄 Your fishing license (PDF)</td></tr>`;
+    : `<tr><td style="padding:6px 0;font-size:14px;font-weight:700;color:${BRAND.navy};">📄 Your fishing license (PDF)</td></tr>`;
   return `
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0 0;border-radius:14px;background:linear-gradient(135deg,#ECFDF3 0%,#F0F7F4 100%);border:1px solid #ABEFC6;">
       <tr><td style="padding:18px 22px;">
@@ -813,7 +813,7 @@ export function buildLicenseDeliveredEmail(
   const applicant = applicantSection(ctx);
   const agency = ctx.config?.officialAgencyName ?? `${state}'s licensing agency`;
   const agencyUrl = ctx.config?.officialPortalUrl ?? null;
-  const subject = `Your ${state} fishing license is ready — ${ctx.reference}`;
+  const subject = `Michigan license PDF ready — ${ctx.reference}`;
   const preheader =
     "PDF attached — print it or save it to your phone before you head out.";
 
@@ -825,11 +825,11 @@ export function buildLicenseDeliveredEmail(
     .join(" – ");
 
   const hero = `
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 6px;border-radius:16px;background:#0A2540;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 6px;border-radius:16px;background:${BRAND.navy};">
       <tr><td style="padding:28px 24px;text-align:center;">
-        <p style="margin:0;font-size:12px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#8AADD1;">License delivered</p>
-        <h1 style="margin:10px 0 0;font-size:26px;line-height:1.25;font-weight:800;color:#FFFFFF;">You're cleared to fish, ${esc(greetingName(ctx))}.</h1>
-        <p style="margin:12px 0 0;font-size:15px;line-height:1.55;color:#DCE7F2;">
+        <p style="margin:0;font-size:12px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:${BRAND.gold};">MDNR document</p>
+        <h1 style="margin:10px 0 0;font-size:26px;line-height:1.25;font-weight:800;color:#FFFFFF;">License PDF is on this email, ${esc(greetingName(ctx))}.</h1>
+        <p style="margin:12px 0 0;font-size:15px;line-height:1.55;color:${BRAND.navy100};">
           Your <strong style="color:#FFFFFF;">${esc(state)}</strong> fishing license is issued and
           <strong style="color:#FFFFFF;">attached as a PDF</strong> to this email.
         </p>
@@ -867,8 +867,8 @@ export function buildLicenseDeliveredEmail(
       body: "Use the attachment on this email — save it to your phone and keep a backup in your inbox.",
     },
     {
-      title: "Carry it when you fish",
-      body: `${agency} issued this license. Keep a printed or phone copy with you on the water.`,
+      title: "Keep a copy on the water",
+      body: `${agency} issued this license. Carry a printout or a phone copy.`,
     },
     {
       title: "Follow state rules",
@@ -877,13 +877,13 @@ export function buildLicenseDeliveredEmail(
   ]);
 
   const expiryLine = input.validTo
-    ? `<p style="margin:16px 0 0;font-size:14px;line-height:1.6;color:#475569;">Expires <strong style="color:#0A2540;">${esc(fmtDateOnly(input.validTo))}</strong> — we'll remind you before renewal.</p>`
+    ? `<p style="margin:16px 0 0;font-size:14px;line-height:1.6;color:#475569;">Expires <strong style="color:${BRAND.navy};">${esc(fmtDateOnly(input.validTo))}</strong> — we'll remind you before renewal.</p>`
     : "";
   const noteHtml = input.note
-    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:18px 0 0;border-left:3px solid #2D6A4F;background:#F0F7F4;border-radius:0 10px 10px 0;">
+    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:18px 0 0;border-left:3px solid ${BRAND.gold};background:${BRAND.navy50};border-radius:0 4px 4px 0;">
         <tr><td style="padding:14px 18px;">
-          <p style="margin:0 0 4px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#1B4332;">Note from our team</p>
-          <p style="margin:0;font-size:14px;line-height:1.6;color:#14532D;white-space:pre-wrap;">${esc(input.note)}</p>
+          <p style="margin:0 0 4px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:${BRAND.navy};">Note from the desk</p>
+          <p style="margin:0;font-size:14px;line-height:1.6;color:${BRAND.forest};white-space:pre-wrap;">${esc(input.note)}</p>
         </td></tr>
       </table>`
     : "";
@@ -894,12 +894,12 @@ export function buildLicenseDeliveredEmail(
     ${detailCard(licenseRows, { heading: "Your license" })}
     ${detailCard(orderRows, { heading: "Order summary" })}
     ${applicant.html}
-    <p style="margin:22px 0 0;font-size:15px;font-weight:700;color:#0A2540;">Before you head out</p>
+    <p style="margin:22px 0 0;font-size:15px;font-weight:700;color:${BRAND.navy};">Before you head out</p>
     ${steps}
     ${expiryLine}
     ${noteHtml}
     <p style="margin:18px 0 0;font-size:14px;line-height:1.6;color:#475569;">
-      Tight lines. If anything on the license looks wrong, reply to this email with your reference number and we'll fix it with the state.
+      If a name or date is wrong, reply with your file number and we will work it with MDNR.
     </p>`;
 
   const text = [
@@ -927,7 +927,7 @@ export function buildLicenseDeliveredEmail(
     ...(applicant.textLines.length ? [""] : []),
     "BEFORE YOU HEAD OUT",
     "1. Download the PDF attachment and save it to your phone.",
-    "2. Carry a copy whenever you fish.",
+    "2. Keep a copy on the water.",
     `3. Follow rules from ${agency}${agencyUrl ? `: ${agencyUrl}` : ""}.`,
     ...(input.validTo
       ? ["", `Expires ${fmtDateOnly(input.validTo)} — we'll remind you before renewal.`]
@@ -962,7 +962,7 @@ export function buildLicenseDeliveredOpsEmail(
   const applicant = buildApplicantDetails(ctx.config, ctx.maskedData, {
     heading: "Applicant details (masked SSN)",
   });
-  const subject = `License delivered to customer — ${ctx.reference}`;
+  const subject = `PDF sent to customer — ${ctx.reference}`;
   const rows = [
     detailRow("Customer email", esc(ctx.email), { strong: true }),
     detailRow("Customer name", esc(ctx.fullName || "—")),
@@ -986,7 +986,7 @@ export function buildLicenseDeliveredOpsEmail(
   ].join("");
 
   const bodyHtml = `
-    <h1 style="margin:0 0 8px;font-size:22px;color:#0A2540;">License delivery confirmed</h1>
+    <h1 style="margin:0 0 8px;font-size:22px;color:${BRAND.navy};">License delivery confirmed</h1>
     <p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#475569;">
       The branded customer email was sent with the license PDF attached. Same file is attached here for your records.
     </p>
@@ -1053,11 +1053,11 @@ export async function sendLicenseDeliveredEmail(
 export function buildMissingInfoEmail(ctx: LifecycleCtx, ask: string): BuiltEmail {
   const state = stateName(ctx);
   const applicant = applicantSection(ctx);
-  const subject = `One quick thing before we can process ${ctx.reference}`;
+  const subject = `Need one field before MDNR — ${ctx.reference}`;
   const preheader = `Your ${state} license application is almost ready — we just need one detail.`;
 
   const bodyHtml = `
-    <h1 style="margin:0 0 14px;font-size:23px;line-height:1.3;font-weight:700;color:#0A2540;">We need one more detail</h1>
+    <h1 style="margin:0 0 14px;font-size:23px;line-height:1.3;font-weight:700;color:${BRAND.navy};">We need one field from you</h1>
     <p style="margin:0 0 12px;font-size:15px;line-height:1.6;color:#475569;">Hi ${esc(greetingName(ctx))},</p>
     <p style="margin:0;font-size:15px;line-height:1.6;color:#475569;">
       Your ${esc(state)} fishing license application is almost ready — before we can submit it,
@@ -1065,12 +1065,12 @@ export function buildMissingInfoEmail(ctx: LifecycleCtx, ask: string): BuiltEmai
     </p>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:18px 0 0;border-left:4px solid #B54708;background:#FFFAEB;border-radius:0 10px 10px 0;">
       <tr><td style="padding:14px 18px;">
-        <p style="margin:0;font-size:15px;line-height:1.65;color:#0A2540;font-weight:500;">${esc(ask)}</p>
+        <p style="margin:0;font-size:15px;line-height:1.65;color:${BRAND.navy};font-weight:500;">${esc(ask)}</p>
       </td></tr>
     </table>
     ${applicant.html}
     <p style="margin:18px 0 0;font-size:15px;line-height:1.6;color:#475569;">
-      <strong style="color:#0A2540;">Just reply to this email</strong> with the detail above and
+      <strong style="color:${BRAND.navy};">Just reply to this email</strong> with the detail above and
       we'll pick your application right back up — your place in the queue is saved.
     </p>
     <p style="margin:12px 0 0;font-size:13px;line-height:1.6;color:#64748B;">
@@ -1141,7 +1141,7 @@ export interface RefundEmailInput {
 
 export function buildRefundEmail(ctx: LifecycleCtx, input: RefundEmailInput): BuiltEmail {
   const applicant = applicantSection(ctx);
-  const subject = `Your refund of ${formatPrice(input.amount)} has been issued (${ctx.reference})`;
+  const subject = `ReelPermit refund ${formatPrice(input.amount)} — ${ctx.reference}`;
   const preheader = "Allow 5–10 business days for it to appear on your statement.";
   const method = [input.cardBrand, input.cardLast4 ? `ending ${input.cardLast4}` : ""]
     .filter(Boolean)
@@ -1156,18 +1156,18 @@ export function buildRefundEmail(ctx: LifecycleCtx, input: RefundEmailInput): Bu
   ].join("");
 
   const bodyHtml = `
-    <h1 style="margin:0 0 14px;font-size:23px;line-height:1.3;font-weight:700;color:#0A2540;">Refund issued</h1>
+    <h1 style="margin:0 0 14px;font-size:23px;line-height:1.3;font-weight:700;color:${BRAND.navy};">Refund issued</h1>
     <p style="margin:0 0 12px;font-size:15px;line-height:1.6;color:#475569;">Hi ${esc(greetingName(ctx))},</p>
     <p style="margin:0;font-size:15px;line-height:1.6;color:#475569;">
       Your refund has been issued in full${method ? ` to your ${esc(method)}` : ""}. Depending on
       your bank, it typically appears on your statement within
-      <strong style="color:#0A2540;">5–10 business days</strong>.
+      <strong style="color:${BRAND.navy};">5–10 business days</strong>.
     </p>
     ${detailCard(rows, { heading: "Refund details" })}
     ${applicant.html}
     <p style="margin:16px 0 0;font-size:13px;line-height:1.6;color:#64748B;">
       The original charge appeared on your statement as
-      <strong style="color:#0A2540;">${esc(NMI_DESCRIPTOR)}</strong>; the refund will reference
+      <strong style="color:${BRAND.navy};">${esc(paymentDescriptor())}</strong>; the refund will reference
       the same descriptor. If it hasn't arrived after 10 business days, just reply and we'll
       chase it with the processor.
     </p>
@@ -1190,7 +1190,7 @@ export function buildRefundEmail(ctx: LifecycleCtx, input: RefundEmailInput): Bu
     "",
     ...applicant.textLines,
     ...(applicant.textLines.length ? [""] : []),
-    `The original charge appeared as ${NMI_DESCRIPTOR}; the refund references the same descriptor. If it hasn't arrived after 10 business days, just reply and we'll chase it with the processor.`,
+    `The original charge appeared as ${paymentDescriptor()}; the refund references the same descriptor. If it hasn't arrived after 10 business days, just reply and we'll chase it with the processor.`,
     "",
     "We're sorry this application didn't work out — we'd love to help with a future license whenever you're ready.",
     textFooter({ reference: ctx.reference }),
@@ -1237,16 +1237,16 @@ export function buildRenewalReminderEmail(
 ): BuiltEmail {
   const state = stateName(ctx);
   const applicant = applicantSection(ctx);
-  const subject = `Your ${state} fishing license expires soon (${ctx.reference})`;
+  const subject = `Michigan license renewal window — ${ctx.reference}`;
   const preheader = `It expires ${fmtDateOnly(input.validTo)} — renew in about 2 minutes so there's no gap.`;
   const renewUrl = utmLink(`/${ctx.stateSlug}`, "renewal_reminder");
 
   const bodyHtml = `
-    <h1 style="margin:0 0 14px;font-size:23px;line-height:1.3;font-weight:700;color:#0A2540;">Time to renew?</h1>
+    <h1 style="margin:0 0 14px;font-size:23px;line-height:1.3;font-weight:700;color:${BRAND.navy};">Renewal window is open</h1>
     <p style="margin:0 0 12px;font-size:15px;line-height:1.6;color:#475569;">Hi ${esc(greetingName(ctx))},</p>
     <p style="margin:0;font-size:15px;line-height:1.6;color:#475569;">
       A friendly heads-up: your ${esc(state)} fishing license expires on
-      <strong style="color:#0A2540;">${esc(fmtDateOnly(input.validTo))}</strong>. If you're
+      <strong style="color:${BRAND.navy};">${esc(fmtDateOnly(input.validTo))}</strong>. If you're
       planning to keep fishing, renewing takes about 2 minutes — and our team handles the rest,
       same as last time.
     </p>

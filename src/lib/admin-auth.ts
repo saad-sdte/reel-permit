@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { getAdminUserById, type PublicAdminUser } from "@/lib/admin-users";
 import { mongoConfigured } from "@/lib/mongo";
 
-const COOKIE = "ap_admin_session";
+const COOKIE = "rp_admin_session";
 const TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const SESSION_CACHE_MS = 30_000;
 
@@ -11,14 +11,14 @@ type CacheEntry = { user: PublicAdminUser; cachedAt: number };
 
 declare global {
   // eslint-disable-next-line no-var
-  var __anglerAdminSessionCache: Map<string, CacheEntry> | undefined;
+  var __reelpermitAdminSessionCache: Map<string, CacheEntry> | undefined;
 }
 
 function sessionCache() {
-  if (!globalThis.__anglerAdminSessionCache) {
-    globalThis.__anglerAdminSessionCache = new Map();
+  if (!globalThis.__reelpermitAdminSessionCache) {
+    globalThis.__reelpermitAdminSessionCache = new Map();
   }
-  return globalThis.__anglerAdminSessionCache;
+  return globalThis.__reelpermitAdminSessionCache;
 }
 
 /** Used only to sign session cookies (not the login password). */

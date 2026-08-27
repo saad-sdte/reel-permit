@@ -3,7 +3,8 @@ import { z } from "zod";
 import { createHash } from "node:crypto";
 import { getStateConfig } from "@/lib/states";
 import { paymentSchema } from "@/lib/state-config";
-import { chargeSale, NMI_DESCRIPTOR } from "@/lib/nmi";
+import { chargeSale } from "@/lib/nmi";
+import { createWhopCheckoutSession, paymentDescriptor, whopConfigured } from "@/lib/whop";
 import { applyPromoCode } from "@/lib/promo";
 import {
   getApplicationById,
@@ -50,7 +51,7 @@ export const runtime = "nodejs";
 
 const bodySchema = z.object({
   token: z.string().min(20).max(200),
-  payment: paymentSchema,
+  payment: paymentSchema.optional(),
   promoCode: z.string().trim().max(64).optional(),
 });
 
@@ -138,6 +139,52 @@ export async function POST(request: Request) {
       amountCents,
     }).catch(() => null);
   }
+
+  if (whopConfigured()) {
+    try {
+      const session = await createWhopCheckoutSession({
+        amountUsd: amount,
+        title: `Complete payment ${app.reference}`,
+        applicationId: app.id,
+        reference: app.reference,
+      });
+      await logPaymentEvent({
+        applicationId: app.id,
+        source: "retry_page",
+        eventType: "whop_session",
+        detail: { sessionId: session.sessionId },
+      });
+      return NextResponse.json({
+        ok: true,
+        awaitingPayment: true,
+        checkoutSessionId: session.sessionId,
+        planId: session.planId,
+        applicationId: app.id,
+        reference: app.reference,
+        amount,
+      });
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error(
+        `[api/payments/retry] Whop checkout failed: ${err instanceof Error ? err.message : "unknown"}`,
+      );
+      return NextResponse.json(
+        { ok: false, message: "Payment could not be started. Please try again." },
+        { status: 502 },
+      );
+    }
+  }
+
+  if (!payment?.token) {
+    return NextResponse.json({
+      ok: true,
+      useLocalCard: true,
+      applicationId: app.id,
+      reference: app.reference,
+      amount,
+    });
+  }
+
   const tokenFingerprint = createHash("sha256").update(payment.token).digest("hex").slice(0, 12);
 
   await logPaymentEvent({
@@ -178,7 +225,7 @@ export async function POST(request: Request) {
       cardBrand: payment.brand,
       cardLast4: payment.last4,
       billingZip: payment.billingZip,
-      descriptor: NMI_DESCRIPTOR,
+      descriptor: paymentDescriptor(),
       rawResponse: charge.gateway?.raw,
       idempotencyKey: `retry/${app.id}/${tokenFingerprint}`,
     }).catch(() => null);
@@ -214,7 +261,7 @@ export async function POST(request: Request) {
     cardBrand: payment.brand,
     cardLast4: payment.last4,
     billingZip: payment.billingZip,
-    descriptor: NMI_DESCRIPTOR,
+    descriptor: paymentDescriptor(),
     devMode: charge.devMode,
     rawResponse: charge.gateway?.raw,
     idempotencyKey: `retry/${app.id}/${tokenFingerprint}`,
@@ -282,7 +329,7 @@ export async function POST(request: Request) {
         amount,
         last4: payment.last4,
         brand: payment.brand,
-        descriptor: NMI_DESCRIPTOR,
+        descriptor: paymentDescriptor(),
         devMode: charge.devMode,
       },
       submittedAt: app.submittedAt,
@@ -301,7 +348,7 @@ export async function POST(request: Request) {
       type: "ops_paid",
       to: admins,
       from: process.env.EMAIL_FROM ?? "ReelPermit <orders@reelpermit.local>",
-      subject: `[AP Ops] ${adminTpl.subject}`,
+      subject: `[RP Ops] ${adminTpl.subject}`,
       html: adminTpl.html,
       text: adminTpl.text,
       replyTo: app.email ?? undefined,
@@ -310,7 +357,7 @@ export async function POST(request: Request) {
   }
 
   await opsAlert(
-    `🐟 Payment recovered — ${app.reference}`,
+    `Paid again — ${app.reference}`,
     [
       `Application: ${app.reference} (${app.id})`,
       `Amount: $${amount.toFixed(2)} — transaction ${charge.transactionId}`,

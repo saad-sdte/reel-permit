@@ -9,6 +9,7 @@ import { CopyableValue } from "@/components/admin/copyable-value";
 import { DocumentsGallery } from "@/components/admin/documents-gallery";
 import { StatusPill } from "@/components/admin/status-pill";
 import { STATES, customerName, stateLabel } from "@/components/admin/admin-utils";
+import { ADMIN_BASE } from "@/lib/admin-paths";
 
 type DocumentRow = {
   id: string;
@@ -154,7 +155,7 @@ export function DocumentsView() {
             <article key={row.id} className="admin-card admin-rise" style={{ padding: "1.1rem" }}>
               <div className="admin-meta-row" style={{ marginBottom: 12 }}>
                 <Link
-                  href={`/admin/applications/${row.id}?tab=documents`}
+                  href={`${ADMIN_BASE}/applications/${row.id}?tab=documents`}
                   prefetch={false}
                   className="admin-link"
                   style={{ fontWeight: 700 }}

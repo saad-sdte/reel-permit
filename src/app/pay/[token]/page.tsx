@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
  * /pay/{token} — secure no-login payment retry (every dunning CTA lands here).
  *
  * The cryptographically random token IS the auth. States handled:
- *  - valid + unpaid   -> checkout-grade retry page (order recap + Collect.js)
+ *  - valid + unpaid   -> checkout-grade retry page (order recap + Whop / local card)
  *  - already paid     -> "You're all set" status page
  *  - expired/used/bad -> friendly explanation + start-a-new-application CTA
  *
@@ -194,6 +194,7 @@ export default async function PayPage({ params }: { params: { token: string } })
               total={amount}
               stateName={stateName}
               reference={app.reference}
+              email={app.email}
             />
           </div>
         </div>

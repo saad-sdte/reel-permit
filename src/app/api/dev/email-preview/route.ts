@@ -26,7 +26,7 @@ export const dynamic = "force-dynamic";
 /**
  * GET /api/dev/email-preview — template preview + test-send harness.
  *
- *   ?secret=ADMIN_PANEL_SECRET     required (same team secret as /admin)
+ *   ?secret=ADMIN_PANEL_SECRET     required (same team secret as /cpanel/admin)
  *   &template=1|2|4|5|6|7|8|3|9|10|renewal|checkout   which email
  *   &format=html|text              default html
  *   &state=michigan|texas|...      seed state (default michigan)

@@ -40,7 +40,7 @@ function page(body: string): NextResponse {
     `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Renewal reminders — ReelPermit</title></head>
 <body style="margin:0;background:#F4F6F8;font-family:system-ui,-apple-system,'Segoe UI',Arial,sans-serif;">
 <div style="max-width:520px;margin:60px auto;padding:0 16px;">
-  <div style="background:#0A2540;border-radius:14px 14px 0 0;padding:22px 30px;color:#fff;font-size:19px;font-weight:600;">Angler<span style="color:#8ABAA5;">Permit</span></div>
+  <div style="background:#16332b;border-radius:14px 14px 0 0;padding:22px 30px;color:#fff;font-size:19px;font-weight:600;">Reel<span style="color:#e2c48a;">Permit</span></div>
   <div style="background:#fff;border:1px solid #E3E8EF;border-top:0;border-radius:0 0 14px 14px;padding:30px;text-align:center;">${body}</div>
 </div></body></html>`,
     { headers: { "Content-Type": "text/html; charset=utf-8" } },
@@ -73,7 +73,7 @@ export async function POST(request: Request) {
   const accept = request.headers.get("accept") ?? "";
   if (accept.includes("text/html")) {
     return page(`<h1 style="font-size:20px;color:#067647;">Done — reminders stopped</h1>
-      <p style="color:#475569;line-height:1.6;">You won't receive renewal reminders for this license. Tight lines!</p>`);
+      <p style="color:#475569;line-height:1.6;">You won't receive renewal reminders for this license. The Michigan desk will stay quiet on this file.</p>`);
   }
   return NextResponse.json({ ok: true });
 }

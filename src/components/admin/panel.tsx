@@ -28,6 +28,7 @@ import {
   Images,
   Moon,
   Sun,
+  Lock,
 } from "lucide-react";
 import type { ApplicationRecord, ApplicationStatus } from "@/lib/storage";
 import type { PublicAdminUser } from "@/lib/admin-users";
@@ -68,6 +69,7 @@ import { useAdminSession, useAdminTheme } from "@/components/admin/admin-theme";
 import { AdminAccountMenu } from "@/components/admin/account-menu";
 import { AdminAvatar } from "@/components/admin/admin-avatar";
 import { DashboardHome, type DocRow } from "@/components/admin/dashboard-home";
+import { ADMIN_BASE, adminPath } from "@/lib/admin-paths";
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() || "";
@@ -77,16 +79,16 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
   async function logout() {
     await fetch("/api/admin/auth", { method: "DELETE" });
-    router.push("/admin/login");
+    router.push(adminPath("/login"));
     router.refresh();
   }
 
   const links = [
-    { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
-    { href: "/admin/applications", label: "Applications", icon: FileStack },
-    { href: "/admin/documents", label: "Documents", icon: Images },
-    { href: "/admin/users", label: "Team", icon: Users },
-    { href: "/admin/deliver", label: "Deliver", icon: Send },
+    { href: adminPath(), label: "Dashboard", icon: LayoutDashboard, exact: true },
+    { href: adminPath("/applications"), label: "Applications", icon: FileStack },
+    { href: adminPath("/documents"), label: "Documents", icon: Images },
+    { href: adminPath("/users"), label: "Team", icon: Users },
+    { href: adminPath("/deliver"), label: "Deliver", icon: Send },
   ];
 
   return (
@@ -94,8 +96,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       <div className="admin-shell">
         <aside className="admin-sidebar">
           <div className="admin-brand">
-            Angler<span>Permit</span>
-            <div className="admin-brand-sub">Operations</div>
+            Reel<span>Permit</span>
+            <div className="admin-brand-sub">Control panel</div>
           </div>
           <nav className="admin-nav">
             {links.map(({ href, label, icon: Icon, exact }) => {
@@ -685,7 +687,7 @@ export function ApplicationsView() {
                     <td className="admin-col-num">{(page - 1) * pageSize + idx + 1}</td>
                     <td>
                       <Link
-                        href={`/admin/applications/${app.id}`}
+                        href={`${ADMIN_BASE}/applications/${app.id}`}
                         prefetch={false}
                         className="admin-link"
                       >
@@ -707,7 +709,7 @@ export function ApplicationsView() {
                     <td>
                       {extractApplicantDocuments(app.formData).length > 0 ? (
                         <Link
-                          href={`/admin/applications/${app.id}?tab=documents`}
+                          href={`${ADMIN_BASE}/applications/${app.id}?tab=documents`}
                           prefetch={false}
                           className="admin-link"
                           title="View scanned documents"
@@ -1154,7 +1156,7 @@ export function ApplicationDetailView({ id }: { id: string }) {
   if (error && !app) {
     return (
       <div>
-        <button type="button" className="admin-back" onClick={() => router.push("/admin/applications")}>
+        <button type="button" className="admin-back" onClick={() => router.push(adminPath("/applications"))}>
           <ArrowLeft size={16} /> Back to applications
         </button>
         <p className="admin-alert admin-alert-error">{error}</p>
@@ -1169,7 +1171,7 @@ export function ApplicationDetailView({ id }: { id: string }) {
 
   return (
     <div>
-      <button type="button" className="admin-back" onClick={() => router.push("/admin/applications")}>
+      <button type="button" className="admin-back" onClick={() => router.push(adminPath("/applications"))}>
         <ArrowLeft size={16} /> Back to applications
       </button>
 
@@ -1381,7 +1383,7 @@ export function ApplicationDetailView({ id }: { id: string }) {
                 {opsBusy === "mark-processing" ? "Working…" : "Mark processing"}
               </button>
               <Link
-                href={`/admin/deliver?reference=${encodeURIComponent(app.reference)}`}
+                href={`${ADMIN_BASE}/deliver?reference=${encodeURIComponent(app.reference)}`}
                 prefetch={false}
                 className="admin-btn admin-btn-primary"
               >
@@ -1547,7 +1549,7 @@ export function AdminLoginForm() {
         setError(data.error || "Login failed");
         return;
       }
-      router.push("/admin");
+      router.push(adminPath());
       router.refresh();
     } catch {
       setError("Network error — could not sign in.");
@@ -1558,49 +1560,60 @@ export function AdminLoginForm() {
 
   return (
     <div className="admin-root admin-login-wrap">
-      <form onSubmit={(e) => void onSubmit(e)} className="admin-card admin-rise" style={{ width: "min(400px, 100%)", padding: "2rem" }}>
-        <div className="admin-brand" style={{ color: "var(--ap-ink)", marginBottom: 4 }}>
-          Angler<span style={{ color: "var(--ap-sea)" }}>Permit</span>
-        </div>
-        <h1 className="admin-title" style={{ fontSize: "1.5rem" }}>
-          Ops sign-in
-        </h1>
-        <p className="admin-sub">Sign in with your admin email and password.</p>
-        <label style={{ display: "block", marginTop: 20 }}>
-          <div className="admin-field-label">Email</div>
-          <input
-            className="admin-input"
-            type="email"
-            autoFocus
-            autoComplete="username"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@company.com"
-            required
-          />
-        </label>
-        <label style={{ display: "block", marginTop: 12 }}>
-          <div className="admin-field-label">Password</div>
-          <input
-            className="admin-input"
-            type="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Enter password"
-            required
-          />
-        </label>
-        {error ? <p className="admin-alert admin-alert-error">{error}</p> : null}
-        <button
-          type="submit"
-          className="admin-btn admin-btn-primary"
-          style={{ width: "100%", marginTop: 16 }}
-          disabled={loading}
-        >
-          {loading ? "Signing in…" : "Sign in"}
-        </button>
-      </form>
+      <div className="admin-login-shell">
+        <aside className="admin-login-aside" aria-hidden="true">
+          <p className="admin-login-wordmark admin-login-wordmark-on-dark">
+            Reel<span>Permit</span>
+          </p>
+          <p className="admin-login-aside-kicker">Staff only</p>
+          <h2 className="admin-login-aside-title">Michigan license operations</h2>
+          <p className="admin-login-aside-copy">
+            Review applications, documents, and deliveries. This is not a public page.
+          </p>
+        </aside>
+        <form onSubmit={(e) => void onSubmit(e)} className="admin-login-card">
+          <p className="admin-login-wordmark">
+            Reel<span>Permit</span>
+          </p>
+          <h1 className="admin-login-title">Control panel</h1>
+          <p className="admin-login-lede">Sign in with your ReelPermit work email.</p>
+          <label className="admin-login-field">
+            <span className="admin-field-label">Email</span>
+            <input
+              className="admin-input"
+              type="email"
+              autoFocus
+              autoComplete="username"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@reelpermit.com"
+              required
+            />
+          </label>
+          <label className="admin-login-field">
+            <span className="admin-field-label">Password</span>
+            <input
+              className="admin-input"
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter password"
+              required
+            />
+          </label>
+          {error ? <p className="admin-alert admin-alert-error">{error}</p> : null}
+          <button
+            type="submit"
+            className="admin-btn admin-btn-primary admin-login-submit"
+            disabled={loading}
+          >
+            <Lock size={16} aria-hidden="true" />
+            {loading ? "Signing in…" : "Sign in"}
+          </button>
+          <p className="admin-login-foot">reelpermit.com · authorized staff</p>
+        </form>
+      </div>
     </div>
   );
 }

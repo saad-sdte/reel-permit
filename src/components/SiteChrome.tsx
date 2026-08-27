@@ -8,7 +8,7 @@ import { AosInit } from "@/components/motion/AosInit";
 
 export function SiteChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() || "";
-  const isAdmin = pathname.startsWith("/admin");
+  const isAdmin = pathname.startsWith("/cpanel") || pathname.startsWith("/admin");
 
   if (isAdmin) {
     return <>{children}</>;

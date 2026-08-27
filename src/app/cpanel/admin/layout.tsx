@@ -11,7 +11,10 @@ const adminFont = Source_Sans_3({
 });
 
 export const metadata: Metadata = {
-  title: "Admin · ReelPermit",
+  title: {
+    default: "Control panel",
+    template: "%s · ReelPermit",
+  },
   robots: { index: false, follow: false },
 };
 

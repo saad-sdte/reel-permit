@@ -8,7 +8,8 @@ import {
   maskSensitiveFields,
   type TokenizedPayment,
 } from "@/lib/state-config";
-import { chargeSale, vaultEnabled, NMI_DESCRIPTOR } from "@/lib/nmi";
+import { chargeSale, vaultEnabled } from "@/lib/nmi";
+import { createWhopCheckoutSession, paymentDescriptor, whopConfigured } from "@/lib/whop";
 import { applyPromoCode } from "@/lib/promo";
 import {
   createOrReuseApplication,
@@ -57,7 +58,8 @@ export const runtime = "nodejs";
  *      amount is never accepted (the client doesn't even send one).
  *   3. Persist the application as pending_payment (MASKED data only — the
  *      full SSN is never stored anywhere).
- *   4. Charge the single-use payment token via NMI.
+ *   4. If Whop is configured, return a checkout session for the embed.
+ *      Locally (no Whop keys), charge a simulated tok_dev_* token.
  *   5. Approved  -> status received, payment + audit rows, emails.
  *      Declined  -> status payment_failed (dunning clock starts), HTTP 402
  *                   with a customer-safe message + applicationId so an
@@ -67,8 +69,8 @@ export const runtime = "nodejs";
  * customer emails get the masked copy; the admin email includes the full SSN
  * only when ADMIN_EMAIL_INCLUDE_FULL_SSN=true (and even then is never stored).
  *
- * PCI: this route accepts ONLY tokenized payments (payment.token from
- * Collect.js). DO NOT add raw card fields here — see src/lib/nmi.ts header.
+ * PCI: production card entry lives in Whop's embed. This route never accepts
+ * raw card fields.
  */
 
 function generateReference(stateSlug: string): string {
@@ -177,7 +179,7 @@ export async function POST(request: Request) {
     addOnIds: string[];
     data: Record<string, unknown>;
     consents: { accurateAndTerms: boolean };
-    payment: TokenizedPayment;
+    payment?: TokenizedPayment;
   };
 
   /* ------------------------- server-authoritative price ------------------------- */
@@ -290,7 +292,63 @@ export async function POST(request: Request) {
     });
   }
 
-  /* ------------------------- charge ------------------------- */
+  /* ------------------------- Whop checkout ------------------------- */
+
+  if (whopConfigured()) {
+    if (!appRecord) {
+      return NextResponse.json(
+        { ok: false, message: "We could not save your application. Please try again." },
+        { status: 500 },
+      );
+    }
+    try {
+      const licenseName =
+        config?.licenses.find((l) => l.id === submission.licenseId)?.name ??
+        "Michigan fishing license";
+      const session = await createWhopCheckoutSession({
+        amountUsd: amount,
+        title: `${licenseName} (${reference})`,
+        applicationId: appRecord.id,
+        reference,
+      });
+      await logPaymentEvent({
+        applicationId: appRecord.id,
+        source: "checkout",
+        eventType: "whop_session",
+        detail: { sessionId: session.sessionId, planId: session.planId },
+      });
+      return NextResponse.json({
+        ok: true,
+        awaitingPayment: true,
+        checkoutSessionId: session.sessionId,
+        planId: session.planId,
+        applicationId: appRecord.id,
+        reference,
+        amount,
+      });
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error(
+        `[api/applications] Whop checkout failed: ${err instanceof Error ? err.message : "unknown"}`,
+      );
+      return NextResponse.json(
+        { ok: false, message: "Payment could not be started. Please try again." },
+        { status: 502 },
+      );
+    }
+  }
+
+  if (!submission.payment?.token) {
+    return NextResponse.json({
+      ok: true,
+      useLocalCard: true,
+      applicationId: appRecord?.id ?? null,
+      reference,
+      amount,
+    });
+  }
+
+  /* ------------------------- charge (local / simulated) ------------------------- */
 
   const tokenFingerprint = createHash("sha256")
     .update(submission.payment.token)
@@ -339,7 +397,7 @@ export async function POST(request: Request) {
         cardBrand: submission.payment.brand,
         cardLast4: submission.payment.last4,
         billingZip: submission.payment.billingZip,
-        descriptor: NMI_DESCRIPTOR,
+        descriptor: paymentDescriptor(),
         rawResponse: charge.gateway?.raw,
         idempotencyKey: `sale/${appRecord.id}/${tokenFingerprint}`,
       }).catch(() => null);
@@ -468,7 +526,7 @@ export async function POST(request: Request) {
       cardBrand: submission.payment.brand,
       cardLast4: submission.payment.last4,
       billingZip: submission.payment.billingZip,
-      descriptor: NMI_DESCRIPTOR,
+          descriptor: paymentDescriptor(),
       devMode: charge.devMode,
       rawResponse: charge.gateway?.raw,
       idempotencyKey: `sale/${appRecord.id}/${tokenFingerprint}`,
@@ -502,7 +560,7 @@ export async function POST(request: Request) {
           transactionId: charge.transactionId,
           last4: submission.payment.last4,
           brand: submission.payment.brand,
-          descriptor: NMI_DESCRIPTOR,
+          descriptor: paymentDescriptor(),
           devMode: charge.devMode,
         },
       );
@@ -592,7 +650,7 @@ export async function POST(request: Request) {
     console.warn(`[api/applications] ${reference}: no customer email — #1/#2 skipped`);
   }
 
-  // [AP Ops] payment-received notification — uses charged amount (incl. promos).
+  // [RP Ops] payment-received notification — uses charged amount (incl. promos).
   const admins = adminRecipients();
   if (admins.length) {
     const app: StoredApplication = {
@@ -608,7 +666,7 @@ export async function POST(request: Request) {
         amount,
         last4: submission.payment.last4,
         brand: submission.payment.brand,
-        descriptor: NMI_DESCRIPTOR,
+        descriptor: paymentDescriptor(),
         devMode: charge.devMode,
       },
       submittedAt: appRecord?.submittedAt ?? paidAt.toISOString(),
@@ -622,7 +680,7 @@ export async function POST(request: Request) {
       type: "ops_paid",
       to: admins,
       from: process.env.EMAIL_FROM ?? "ReelPermit <orders@reelpermit.local>",
-      subject: `[AP Ops] ${adminTpl.subject}`,
+      subject: `[RP Ops] ${adminTpl.subject}`,
       html: adminTpl.html,
       text: adminTpl.text,
       replyTo: email ?? undefined,

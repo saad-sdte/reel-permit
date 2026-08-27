@@ -17,7 +17,7 @@ import { BUSINESS } from "./email-layout";
  *
  * Failure containment: a failed email NEVER throws into the calling flow —
  * payment processing must not break because an email bounced. Failures are
- * recorded in email_log and surfaced via an [AP Ops] alert.
+ * recorded in email_log and surfaced via an [RP Ops] alert.
  *
  * PII: email_log stores metadata only (type/recipient/subject/message id and
  * a small `meta` props reference) — never full rendered bodies.
@@ -306,7 +306,7 @@ export function adminRecipients(): string[] {
 }
 
 /**
- * Plain, fast, information-dense internal email with the [AP Ops] prefix.
+ * Plain, fast, information-dense internal email with the [RP Ops] prefix.
  * Best effort — never throws, never recurses into sendEmail.
  */
 export async function opsAlert(subject: string, body: string): Promise<void> {
@@ -317,9 +317,9 @@ export async function opsAlert(subject: string, body: string): Promise<void> {
     return;
   }
   await deliver({
-    from: env("EMAIL_FROM") ?? "ReelPermit <orders@reelpermit.local>",
+    from: env("EMAIL_FROM") ?? "ReelPermit <orders@reelpermit.com>",
     to: admins,
-    subject: `[AP Ops] ${subject}`,
+    subject: `[RP Ops] ${subject}`,
     html: `<pre style="font-family:ui-monospace,Consolas,Menlo,monospace;font-size:13px;line-height:1.6;white-space:pre-wrap;">${body
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")}</pre>`,

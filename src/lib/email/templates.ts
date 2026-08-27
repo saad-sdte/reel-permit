@@ -143,7 +143,7 @@ export function orderConfirmationEmail(ctx: OrderEmailContext): {
   const state = stateName(ctx);
   const total = formatPrice(orderTotal(ctx));
   const addOns = addOnNames(ctx);
-  const subject = `🐟 Order confirmed ${ctx.app.reference} — your ${state} fishing license application`;
+  const subject = `ReelPermit filed your ${state} application — ${ctx.app.reference}`;
 
   const applicant = buildApplicantDetails(ctx.config, ctx.maskedData);
   const validity = licenseValidity(ctx);
@@ -164,47 +164,45 @@ export function orderConfirmationEmail(ctx: OrderEmailContext): {
   ].join("");
 
   const bodyHtml = `
-    <h1 style="margin:0;font-size:22px;line-height:1.3;color:${BRAND.navy};">Thanks${first ? `, ${esc(first)}` : ""} — your application is in.</h1>
+    <h1 style="margin:0;font-size:22px;line-height:1.3;color:${BRAND.navy};">Michigan desk has your file${first ? `, ${esc(first)}` : ""}.</h1>
     <p style="margin:14px 0 0;font-size:14px;line-height:1.65;color:${BRAND.slate600};">
-      We've received your <strong style="color:${BRAND.navy};">${esc(state)}</strong> fishing license application
-      and your payment of <strong style="color:${BRAND.navy};">${esc(total)}</strong>.
-      A licensing specialist will now review it and take care of everything from here.
+      Payment of <strong style="color:${BRAND.navy};">${esc(total)}</strong> is in. ReelPermit will review this
+      <strong style="color:${BRAND.navy};">${esc(state)}</strong> fishing-license file and submit it on the official MDNR portal — we do not issue licenses ourselves.
     </p>
     ${referenceBanner(ctx.app.reference)}
-    ${detailCard(orderRows, { heading: "Order summary" })}
-    ${detailCard(paymentRows, { heading: "Payment receipt" })}
+    ${detailCard(orderRows, { heading: "What you ordered" })}
+    ${detailCard(paymentRows, { heading: "Charge" })}
     ${applicant.html}
-    <h2 style="margin:26px 0 0;font-size:16px;color:${BRAND.navy};">What happens next</h2>
+    <h2 style="margin:26px 0 0;font-size:16px;color:${BRAND.navy};">On our side next</h2>
     ${stepsBlock([
-      { title: "Review", body: "A specialist checks your application for errors — usually within 1 business day." },
-      { title: "Processing", body: "We process your order — your card statement shows “" + ctx.app.payment.descriptor + "”." },
-      { title: "Delivery", body: "Your license and receipt are emailed to this address as soon as the state issues them." },
+      { title: "Desk review", body: "Someone checks the file against MDNR rules — usually within one business day." },
+      { title: "Official purchase", body: "We buy the license on Michigan’s eLicense portal. Your statement shows “" + ctx.app.payment.descriptor + "”." },
+      { title: "PDF to this inbox", body: "When MDNR issues the document, we email it here as an attachment." },
     ])}
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0 0;border-left:3px solid ${BRAND.forest500};background:${BRAND.forest50};border-radius:0 10px 10px 0;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0 0;border-left:3px solid ${BRAND.gold};background:${BRAND.navy50};border-radius:0 4px 4px 0;">
       <tr><td style="padding:13px 18px;">
         <p style="margin:0;font-size:13px;line-height:1.6;color:${BRAND.forest};">
-          <strong>Refund promise:</strong> your order is fully refundable any time before we purchase your license from the state.
+          <strong>Refunds:</strong> full refund until we complete the MDNR purchase. After that, state rules apply.
         </p>
       </td></tr>
     </table>`;
 
   const text = [
-    `Thanks${first ? `, ${first}` : ""} — your application is in.`,
+    `Michigan desk has your file${first ? `, ${first}` : ""}.`,
     ``,
-    `We've received your ${state} fishing license application and your payment of ${total}.`,
-    `A licensing specialist will review it and take care of everything from here.`,
+    `Payment of ${total} is in. ReelPermit will review this ${state} fishing-license file and submit it on the official MDNR portal — we do not issue licenses ourselves.`,
     ``,
-    `Your reference number: ${ctx.app.reference}`,
-    `(Keep this number — include it whenever you contact us.)`,
+    `File number: ${ctx.app.reference}`,
+    `(Quote this number if you write to support.)`,
     ``,
-    `ORDER SUMMARY`,
+    `WHAT YOU ORDERED`,
     `State: ${state}`,
     `Residency: ${residencyLabel(ctx.app.residency)}`,
     `License: ${licenseName(ctx)}`,
     ...(validity ? [`Valid: ${validity}`] : []),
     ...(addOns.length ? [`Add-ons: ${addOns.join(", ")}`] : []),
     ``,
-    `PAYMENT RECEIPT`,
+    `CHARGE`,
     `Amount charged: ${total}`,
     `Payment method: ${paymentSummaryValue(ctx.app)}`,
     `Transaction ID: ${ctx.app.payment.transactionId}`,
@@ -212,16 +210,16 @@ export function orderConfirmationEmail(ctx: OrderEmailContext): {
     ``,
     ...applicant.textLines,
     ...(applicant.textLines.length ? [``] : []),
-    `WHAT HAPPENS NEXT`,
-    `1. Review — a specialist checks your application for errors (usually within 1 business day).`,
-    `2. Processing — we process your order.`,
-    `3. Delivery — your license and receipt are emailed to this address.`,
+    `ON OUR SIDE NEXT`,
+    `1. Desk review — usually within one business day.`,
+    `2. Official purchase on Michigan’s eLicense portal.`,
+    `3. PDF emailed here when MDNR issues it.`,
     ``,
-    `Refund promise: your order is fully refundable any time before we purchase your license from the state.`,
+    `Refunds: full refund until we complete the MDNR purchase. After that, state rules apply.`,
     textFooter(),
   ].join("\n");
 
-  return { subject, html: emailShell({ preheader: `Reference ${ctx.app.reference} · ${state} · ${total} — we'll email your license once the state issues it.`, kicker: "Order confirmation", bodyHtml }), text };
+  return { subject, html: emailShell({ preheader: `File ${ctx.app.reference} · ${state} · ${total} — MDNR PDF follows after we purchase.`, kicker: "File received", bodyHtml }), text };
 }
 
 /* ------------------------------------------------------------------ */
@@ -237,10 +235,10 @@ export function adminNewOrderEmail(
   const state = stateName(ctx);
   const total = formatPrice(orderTotal(ctx));
   const addOns = addOnNames(ctx);
-  // Paid subject uses 🐟 so ReelPermit payment alerts stand out from other sites.
+  // Ops subjects stay emoji-free so they sort cleanly next to AnglerPermit inboxes.
   const subject = checkoutStarted
-    ? `Checkout started ${ctx.app.reference} — ${state} — ${total}`
-    : `🐟 Payment received ${ctx.app.reference} — ${state} — ${total}`;
+    ? `[RP] Checkout open ${ctx.app.reference} — ${state} — ${total}`
+    : `[RP] Paid ${ctx.app.reference} — ${state} — ${total}`;
 
   // Choose data source: masked by default; raw only when explicitly enabled.
   const data =
@@ -309,7 +307,7 @@ export function adminNewOrderEmail(
     : "";
 
   const bodyHtml = `
-    <h1 style="margin:0;font-size:20px;color:${BRAND.navy};">${checkoutStarted ? "Checkout started — payment pending" : "🐟 Payment received"}</h1>
+    <h1 style="margin:0;font-size:20px;color:${BRAND.navy};">${checkoutStarted ? "Checkout open — not paid yet" : "Payment captured"}</h1>
     <p style="margin:10px 0 0;font-size:14px;color:${BRAND.slate600};">${
       checkoutStarted
         ? "Applicant finished the form and opened payment. Reply to reach them if they abandon checkout."
@@ -322,7 +320,7 @@ export function adminNewOrderEmail(
     ${portal}`;
 
   const text = [
-    checkoutStarted ? `Checkout started — payment pending` : `🐟 Payment received`,
+    checkoutStarted ? `Checkout open — not paid yet` : `Payment captured`,
     ``,
     `ORDER`,
     `Reference: ${ctx.app.reference}`,
@@ -373,7 +371,7 @@ export function checkoutStartedCustomerEmail(ctx: OrderEmailContext): {
   const state = stateName(ctx);
   const total = formatPrice(orderTotal(ctx));
   const addOns = addOnNames(ctx);
-  const subject = `Complete your ${state} license checkout (${ctx.app.reference})`;
+  const subject = `Finish Michigan checkout — ${ctx.app.reference}`;
 
   const applicant = buildApplicantDetails(ctx.config, ctx.maskedData);
   const validity = licenseValidity(ctx);
@@ -388,23 +386,22 @@ export function checkoutStartedCustomerEmail(ctx: OrderEmailContext): {
   ].join("");
 
   const bodyHtml = `
-    <h1 style="margin:0;font-size:22px;line-height:1.3;color:${BRAND.navy};">You're one step away${first ? `, ${esc(first)}` : ""}</h1>
+    <h1 style="margin:0;font-size:22px;line-height:1.3;color:${BRAND.navy};">Payment is still open${first ? `, ${esc(first)}` : ""}</h1>
     <p style="margin:14px 0 0;font-size:14px;line-height:1.65;color:${BRAND.slate600};">
-      We've saved your <strong style="color:${BRAND.navy};">${esc(state)}</strong> application details.
-      Finish checkout to submit your order — your card is charged once, securely.
+      We stored your <strong style="color:${BRAND.navy};">${esc(state)}</strong> details. Nothing is charged until you complete the card step.
     </p>
     ${referenceBanner(ctx.app.reference)}
-    ${detailCard(orderRows, { heading: "Order summary" })}
+    ${detailCard(orderRows, { heading: "Saved file" })}
     ${applicant.html}
     <p style="margin:18px 0 0;font-size:14px;line-height:1.6;color:${BRAND.slate600};">
-      Return to the payment step in your browser to complete your order of <strong>${esc(total)}</strong>.
-      If you closed the tab, start again from the ${esc(state)} license page — your specialist team is ready when you are.
+      Go back to the payment page in your browser to pay <strong>${esc(total)}</strong>.
+      If that tab is gone, start again from reelpermit.com/apply — the desk will pick up the file once it is paid.
     </p>`;
 
   const text = [
-    `You're one step away${first ? `, ${first}` : ""}.`,
+    `Payment is still open${first ? `, ${first}` : ""}.`,
     ``,
-    `We've saved your ${state} application details. Finish checkout to submit your order.`,
+    `We stored your ${state} details. Nothing is charged until you complete the card step.`,
     ``,
     `Reference: ${ctx.app.reference}`,
     `State: ${state}`,
@@ -447,7 +444,7 @@ export function contactNotificationEmail(msg: ContactMessage): {
   html: string;
   text: string;
 } {
-  const subject = `Support message from ${msg.name}${msg.reference ? ` — ${msg.reference}` : ""}`;
+  const subject = `ReelPermit contact form — ${msg.name}${msg.reference ? ` — ${msg.reference}` : ""}`;
   const rows = [
     detailRow("Name", esc(msg.name)),
     detailRow("Email", `<a href="mailto:${esc(msg.email)}" style="color:${BRAND.forest500};">${esc(msg.email)}</a>`),
@@ -455,8 +452,8 @@ export function contactNotificationEmail(msg: ContactMessage): {
   ].join("");
 
   const bodyHtml = `
-    <h1 style="margin:0;font-size:20px;color:${BRAND.navy};">New support message</h1>
-    <p style="margin:10px 0 0;font-size:14px;color:${BRAND.slate600};">Sent from the contact form on reelpermit.com. Reply to this email to answer ${esc(msg.name.split(" ")[0] || "the customer")} directly.</p>
+    <h1 style="margin:0;font-size:20px;color:${BRAND.navy};">Inbox note from the site</h1>
+    <p style="margin:10px 0 0;font-size:14px;color:${BRAND.slate600};">Submitted on reelpermit.com. Reply to this email to answer ${esc(msg.name.split(" ")[0] || "them")} directly.</p>
     ${detailCard(rows, { heading: "From" })}
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:18px 0 0;border:1px solid ${BRAND.slate200};border-radius:12px;">
       <tr><td style="padding:18px 22px;">
@@ -466,7 +463,7 @@ export function contactNotificationEmail(msg: ContactMessage): {
     </table>`;
 
   const text = [
-    `New support message (contact form)`,
+    `Inbox note from the site (contact form)`,
     ``,
     `Name: ${msg.name}`,
     `Email: ${msg.email}`,
@@ -493,31 +490,30 @@ export function contactAckEmail(msg: ContactMessage): {
   text: string;
 } {
   const first = msg.name.trim().split(/\s+/)[0] || "";
-  const subject = `We got your message${msg.reference ? ` — ${msg.reference}` : ""} | ReelPermit Support`;
+  const subject = `ReelPermit Support has your note${msg.reference ? ` — ${msg.reference}` : ""}`;
 
   const bodyHtml = `
-    <h1 style="margin:0;font-size:22px;color:${BRAND.navy};">We got your message${first ? `, ${esc(first)}` : ""}.</h1>
+    <h1 style="margin:0;font-size:22px;color:${BRAND.navy};">It's on the Michigan desk${first ? `, ${esc(first)}` : ""}.</h1>
     <p style="margin:14px 0 0;font-size:14px;line-height:1.65;color:${BRAND.slate600};">
-      Thanks for reaching out — a real person reads every message. We typically reply within
-      <strong style="color:${BRAND.navy};">1 business day</strong>${msg.reference ? `, and we've linked your note to reference <strong style="color:${BRAND.navy};font-family:monospace;">${esc(msg.reference)}</strong>` : ""}.
+      Someone here will read this and reply, typically within
+      <strong style="color:${BRAND.navy};">one business day</strong>${msg.reference ? `. We tied it to file <strong style="color:${BRAND.navy};font-family:monospace;">${esc(msg.reference)}</strong>` : ""}.
     </p>
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0 0;border:1px solid ${BRAND.slate200};border-radius:12px;background:${BRAND.slate50};">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0 0;border:1px solid ${BRAND.slate200};border-radius:4px;background:${BRAND.slate50};">
       <tr><td style="padding:16px 20px;">
-        <p style="margin:0 0 8px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:${BRAND.slate500};">Your message</p>
+        <p style="margin:0 0 8px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:${BRAND.slate500};">What you sent</p>
         <p style="margin:0;font-size:13px;line-height:1.65;color:${BRAND.slate600};white-space:pre-wrap;">${esc(msg.message)}</p>
       </td></tr>
     </table>
     <p style="margin:18px 0 0;font-size:13px;line-height:1.6;color:${BRAND.slate600};">
-      If anything is urgent, you can also check our <a href="${siteUrl()}/faq" style="color:${BRAND.forest500};font-weight:600;">FAQ</a> — many answers are there.
+      For common Michigan license questions, see the <a href="${siteUrl()}/faq" style="color:${BRAND.forest500};font-weight:600;">FAQ</a>.
     </p>`;
 
   const text = [
-    `We got your message${first ? `, ${first}` : ""}.`,
+    `It's on the Michigan desk${first ? `, ${first}` : ""}.`,
     ``,
-    `Thanks for reaching out — a real person reads every message.`,
-    `We typically reply within 1 business day.${msg.reference ? ` Your note is linked to reference ${msg.reference}.` : ""}`,
+    `Someone here will read this and reply, typically within one business day.${msg.reference ? ` Tied to file ${msg.reference}.` : ""}`,
     ``,
-    `YOUR MESSAGE`,
+    `WHAT YOU SENT`,
     msg.message,
     ``,
     `FAQ: ${siteUrl()}/faq`,
@@ -526,7 +522,7 @@ export function contactAckEmail(msg: ContactMessage): {
 
   return {
     subject,
-    html: emailShell({ preheader: "Thanks for reaching out — we typically reply within 1 business day.", kicker: "Message received", bodyHtml }),
+    html: emailShell({ preheader: "The Michigan desk has your note — typical reply is one business day.", kicker: "Support", bodyHtml }),
     text,
   };
 }
@@ -550,7 +546,7 @@ export function licenseDeliveryEmail(input: LicenseDeliveryInput): {
   text: string;
 } {
   const first = input.customerName.trim().split(/\s+/)[0] || "";
-  const subject = `Your ${input.stateName} fishing license is here — ${input.reference}`;
+  const subject = `Michigan license PDF — ${input.reference}`;
 
   const noteHtml = input.note
     ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:18px 0 0;border-left:3px solid ${BRAND.forest500};background:${BRAND.forest50};border-radius:0 10px 10px 0;">
@@ -567,10 +563,10 @@ export function licenseDeliveryEmail(input: LicenseDeliveryInput): {
     : "";
 
   const bodyHtml = `
-    <h1 style="margin:0;font-size:22px;color:${BRAND.navy};">Tight lines${first ? `, ${esc(first)}` : ""} — your license is attached. 🎣</h1>
+    <h1 style="margin:0;font-size:22px;color:${BRAND.navy};">Official MDNR document attached${first ? `, ${esc(first)}` : ""}.</h1>
     <p style="margin:14px 0 0;font-size:14px;line-height:1.65;color:${BRAND.slate600};">
-      Your <strong style="color:${BRAND.navy};">${esc(input.stateName)}</strong> fishing license has been issued and is attached to this email.
-      Print it or save it to your phone — carry it whenever you fish, and follow your state's regulations.
+      ReelPermit purchased this <strong style="color:${BRAND.navy};">${esc(input.stateName)}</strong> fishing license on the state portal. The PDF is on this email.
+      Save it or print it, carry it on the water, and follow Michigan regulations.
     </p>
     ${referenceBanner(input.reference)}
     ${noteHtml}
@@ -581,21 +577,23 @@ export function licenseDeliveryEmail(input: LicenseDeliveryInput): {
     </p>`;
 
   const text = [
-    `Tight lines${first ? `, ${first}` : ""} — your ${input.stateName} fishing license is attached.`,
+    `Official MDNR document attached${first ? `, ${first}` : ""}.`,
+    ``,
+    `ReelPermit purchased this ${input.stateName} fishing license on the state portal. The PDF is on this email.`,
     ``,
     `Reference: ${input.reference}`,
     ``,
     ...(input.note ? [input.note, ``] : []),
     `Attached: ${input.attachmentNames.join(", ") || "license document"}`,
     ``,
-    `Print it or save it to your phone — carry it whenever you fish, and follow your state's regulations.`,
+    `Save it or print it, carry it on the water, and follow Michigan regulations.`,
     `If anything looks wrong, reply to this email with your reference number and we'll make it right.`,
     textFooter(),
   ].join("\n");
 
   return {
     subject,
-    html: emailShell({ preheader: `Your ${input.stateName} fishing license is attached — reference ${input.reference}.`, kicker: "License delivered", bodyHtml }),
+    html: emailShell({ preheader: `MDNR license PDF attached — file ${input.reference}.`, kicker: "License PDF", bodyHtml }),
     text,
   };
 }

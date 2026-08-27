@@ -29,21 +29,21 @@ type MemStore = { apps: Map<string, MongoAppDoc> };
 
 declare global {
   // eslint-disable-next-line no-var
-  var __anglerMongoClient: MongoClient | null | undefined;
+  var __reelpermitMongoClient: MongoClient | null | undefined;
   // eslint-disable-next-line no-var
-  var __anglerMongoMem: MemStore | undefined;
+  var __reelpermitMongoMem: MemStore | undefined;
   // eslint-disable-next-line no-var
-  var __anglerMongoConnect: Promise<MongoClient | null> | undefined;
+  var __reelpermitMongoConnect: Promise<MongoClient | null> | undefined;
   // eslint-disable-next-line no-var
-  var __anglerMongoError: string | undefined;
+  var __reelpermitMongoError: string | undefined;
   // eslint-disable-next-line no-var
-  var __anglerMongoErrorAt: number | undefined;
+  var __reelpermitMongoErrorAt: number | undefined;
   // eslint-disable-next-line no-var
-  var __anglerMongoSeedChecked: boolean | undefined;
+  var __reelpermitMongoSeedChecked: boolean | undefined;
   // eslint-disable-next-line no-var
-  var __anglerMichiganSeedChecked: boolean | undefined;
+  var __reelpermitMichiganSeedChecked: boolean | undefined;
   // eslint-disable-next-line no-var
-  var __anglerMongoIndexesReady: boolean | undefined;
+  var __reelpermitMongoIndexesReady: boolean | undefined;
 }
 
 /** How many connect attempts per request (transient Atlas blips). */
@@ -83,20 +83,20 @@ export function mongoConfigured(): boolean {
 export function mongoBackendLabel(): string {
   if (uriMode() === "off") return "off";
   if (uriMode() === "memory") return "memory";
-  if (globalThis.__anglerMongoClient) return "mongo";
-  if (globalThis.__anglerMongoError) return "memory";
+  if (globalThis.__reelpermitMongoClient) return "mongo";
+  if (globalThis.__reelpermitMongoError) return "memory";
   return "mongo";
 }
 
 export function mongoLastError(): string | undefined {
-  return globalThis.__anglerMongoError;
+  return globalThis.__reelpermitMongoError;
 }
 
 function mem(): MemStore {
-  if (!globalThis.__anglerMongoMem) {
-    globalThis.__anglerMongoMem = { apps: new Map() };
+  if (!globalThis.__reelpermitMongoMem) {
+    globalThis.__reelpermitMongoMem = { apps: new Map() };
   }
-  return globalThis.__anglerMongoMem;
+  return globalThis.__reelpermitMongoMem;
 }
 
 function sleep(ms: number) {
@@ -105,19 +105,19 @@ function sleep(ms: number) {
 
 async function getClient(): Promise<MongoClient | null> {
   if (uriMode() !== "mongo") return null;
-  if (globalThis.__anglerMongoClient) return globalThis.__anglerMongoClient;
+  if (globalThis.__reelpermitMongoClient) return globalThis.__reelpermitMongoClient;
 
   // Brief cooldown after a hard fail — then auto-retry (don't lock out forever).
-  if (globalThis.__anglerMongoError && globalThis.__anglerMongoErrorAt) {
-    const age = Date.now() - globalThis.__anglerMongoErrorAt;
+  if (globalThis.__reelpermitMongoError && globalThis.__reelpermitMongoErrorAt) {
+    const age = Date.now() - globalThis.__reelpermitMongoErrorAt;
     if (age < CONNECT_ERROR_COOLDOWN_MS) return null;
-    globalThis.__anglerMongoError = undefined;
-    globalThis.__anglerMongoErrorAt = undefined;
+    globalThis.__reelpermitMongoError = undefined;
+    globalThis.__reelpermitMongoErrorAt = undefined;
   }
 
-  if (!globalThis.__anglerMongoConnect) {
+  if (!globalThis.__reelpermitMongoConnect) {
     const uri = process.env.MONGODB_URI!.trim();
-    globalThis.__anglerMongoConnect = (async () => {
+    globalThis.__reelpermitMongoConnect = (async () => {
       let lastMsg = "unknown";
       for (let attempt = 1; attempt <= CONNECT_ATTEMPTS; attempt++) {
         try {
@@ -130,9 +130,9 @@ async function getClient(): Promise<MongoClient | null> {
           });
           await client.connect();
           await client.db("admin").command({ ping: 1 });
-          globalThis.__anglerMongoClient = client;
-          globalThis.__anglerMongoError = undefined;
-          globalThis.__anglerMongoErrorAt = undefined;
+          globalThis.__reelpermitMongoClient = client;
+          globalThis.__reelpermitMongoError = undefined;
+          globalThis.__reelpermitMongoErrorAt = undefined;
           // eslint-disable-next-line no-console
           console.log(
             `[mongo] connected to Atlas${attempt > 1 ? ` (attempt ${attempt}/${CONNECT_ATTEMPTS})` : ""}`,
@@ -149,19 +149,19 @@ async function getClient(): Promise<MongoClient | null> {
           }
         }
       }
-      globalThis.__anglerMongoError = lastMsg;
-      globalThis.__anglerMongoErrorAt = Date.now();
+      globalThis.__reelpermitMongoError = lastMsg;
+      globalThis.__reelpermitMongoErrorAt = Date.now();
       // eslint-disable-next-line no-console
       console.error(
         `[mongo] connect failed after ${CONNECT_ATTEMPTS} attempts — will retry after ${CONNECT_ERROR_COOLDOWN_MS / 1000}s. Fix Atlas Network Access if this persists. ${lastMsg}`,
       );
       return null;
     })().finally(() => {
-      globalThis.__anglerMongoConnect = undefined;
+      globalThis.__reelpermitMongoConnect = undefined;
     });
   }
 
-  return globalThis.__anglerMongoConnect;
+  return globalThis.__reelpermitMongoConnect;
 }
 
 export async function getMongoDb(): Promise<Db | null> {
@@ -172,9 +172,9 @@ export async function getMongoDb(): Promise<Db | null> {
 
 /** Clear a cached Atlas failure so the next call retries (e.g. after IP allowlist). */
 export function resetMongoConnectionCache() {
-  globalThis.__anglerMongoError = undefined;
-  globalThis.__anglerMongoErrorAt = undefined;
-  globalThis.__anglerMongoConnect = undefined;
+  globalThis.__reelpermitMongoError = undefined;
+  globalThis.__reelpermitMongoErrorAt = undefined;
+  globalThis.__reelpermitMongoConnect = undefined;
 }
 
 async function getDb(): Promise<Db | null> {
@@ -196,7 +196,7 @@ async function durableCol(): Promise<Collection<MongoAppDoc> | null> {
   if (c) return c;
   if (uriMode() === "mongo") {
     throw new Error(
-      globalThis.__anglerMongoError ||
+      globalThis.__reelpermitMongoError ||
         "MongoDB Atlas unavailable — refusing memory fallback for durable writes",
     );
   }
@@ -556,7 +556,7 @@ function emptyLast14() {
 
 /** Ensure list/stats queries stay indexed. Idempotent; runs once per process. */
 export async function ensureMongoIndexes(): Promise<void> {
-  if (globalThis.__anglerMongoIndexesReady) return;
+  if (globalThis.__reelpermitMongoIndexesReady) return;
   const c = await col();
   if (!c) return;
   try {
@@ -566,7 +566,7 @@ export async function ensureMongoIndexes(): Promise<void> {
       c.createIndex({ reference: 1 }, { unique: true, sparse: true }),
       c.createIndex({ email: 1 }),
     ]);
-    globalThis.__anglerMongoIndexesReady = true;
+    globalThis.__reelpermitMongoIndexesReady = true;
   } catch (err) {
     // eslint-disable-next-line no-console
     console.error("[mongo] index ensure failed", err instanceof Error ? err.message : err);
@@ -716,7 +716,7 @@ export type DashboardBundle = Awaited<ReturnType<typeof mongoStats>> & {
 
 declare global {
   // eslint-disable-next-line no-var
-  var __anglerDashCache: { at: number; data: DashboardBundle } | undefined;
+  var __reelpermitDashCache: { at: number; data: DashboardBundle } | undefined;
 }
 
 const DASH_CACHE_MS = 4_000;
@@ -727,14 +727,14 @@ export async function mongoDashboardBundle(opts?: {
   bypassCache?: boolean;
 }): Promise<DashboardBundle> {
   const limit = opts?.limit ?? 10;
-  if (!opts?.bypassCache && globalThis.__anglerDashCache) {
-    const age = Date.now() - globalThis.__anglerDashCache.at;
-    if (age < DASH_CACHE_MS) return globalThis.__anglerDashCache.data;
+  if (!opts?.bypassCache && globalThis.__reelpermitDashCache) {
+    const age = Date.now() - globalThis.__reelpermitDashCache.at;
+    if (age < DASH_CACHE_MS) return globalThis.__reelpermitDashCache.data;
   }
 
   const [stats, orders] = await Promise.all([mongoStats(), mongoRecentPaid(limit)]);
   const data: DashboardBundle = { ...stats, orders };
-  globalThis.__anglerDashCache = { at: Date.now(), data };
+  globalThis.__reelpermitDashCache = { at: Date.now(), data };
   return data;
 }
 
@@ -746,7 +746,7 @@ export async function warmMongo(): Promise<void> {
 }
 
 export function invalidateDashCache() {
-  globalThis.__anglerDashCache = undefined;
+  globalThis.__reelpermitDashCache = undefined;
 }
 
 function escapeRegex(s: string) {
@@ -829,8 +829,8 @@ function sortMem(rows: MongoAppDoc[], sort?: AppListQuery["sort"]) {
 /** Eight Michigan fill-test rows for local memory CRM (not Atlas). */
 async function ensureMichiganLocalSeed() {
   if (uriMode() === "mongo") return;
-  if (globalThis.__anglerMichiganSeedChecked) return;
-  globalThis.__anglerMichiganSeedChecked = true;
+  if (globalThis.__reelpermitMichiganSeedChecked) return;
+  globalThis.__reelpermitMichiganSeedChecked = true;
   const { buildMichiganLocalSeedDocs } = await import("./michigan-local-seed");
   const store = mem();
   for (const doc of buildMichiganLocalSeedDocs()) {
@@ -850,11 +850,11 @@ async function ensureDemoSeed() {
   if (process.env.ADMIN_SEED_DEMO === "false") return;
   await ensureMichiganLocalSeed();
   // Skip the count round-trip after the first check in this process.
-  if (globalThis.__anglerMongoSeedChecked) return;
+  if (globalThis.__reelpermitMongoSeedChecked) return;
   const c = await col();
   const count = c ? await c.countDocuments() : mem().apps.size;
   if (count > 0) {
-    globalThis.__anglerMongoSeedChecked = true;
+    globalThis.__reelpermitMongoSeedChecked = true;
     return;
   }
 
@@ -937,5 +937,5 @@ async function ensureDemoSeed() {
     if (c) await c.insertOne(doc);
     else mem().apps.set(id, doc);
   }
-  globalThis.__anglerMongoSeedChecked = true;
+  globalThis.__reelpermitMongoSeedChecked = true;
 }

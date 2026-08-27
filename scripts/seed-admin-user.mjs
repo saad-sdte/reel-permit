@@ -89,7 +89,7 @@ try {
     });
     console.log("Created admin user.");
   }
-  const login = `${(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/$/, "")}/admin/login`;
+  const login = `${(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/$/, "")}/cpanel/admin/login`;
   console.log("");
   console.log("=== Admin login credentials ===");
   console.log(`Email:    ${email}`);

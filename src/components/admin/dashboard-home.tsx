@@ -29,6 +29,7 @@ import {
   stateLabel,
 } from "@/components/admin/admin-utils";
 import { firstNameOf } from "@/components/admin/account-menu";
+import { ADMIN_BASE } from "@/lib/admin-paths";
 
 export type DashStats = {
   total: number;
@@ -179,7 +180,7 @@ export function DashboardHome({
       label: "Applications",
       value: String(stats.total),
       hint: "Across every state",
-      href: "/admin/applications",
+      href: `${ADMIN_BASE}/applications`,
       icon: FileStack,
       tone: "blue",
     },
@@ -187,7 +188,7 @@ export function DashboardHome({
       label: "Needs attention",
       value: String(needsAttention),
       hint: "Received, missing, or in process",
-      href: "/admin/applications",
+      href: `${ADMIN_BASE}/applications`,
       icon: Clock3,
       tone: "orange",
     },
@@ -195,7 +196,7 @@ export function DashboardHome({
       label: "Awaiting payment",
       value: String(pendingCount),
       hint: "Pending or failed checkout",
-      href: "/admin/applications?status=pending_payment",
+      href: `${ADMIN_BASE}/applications?status=pending_payment`,
       icon: CircleDollarSign,
       tone: "gold",
     },
@@ -203,7 +204,7 @@ export function DashboardHome({
       label: "Paid orders",
       value: String(stats.paidCount),
       hint: `${money(stats.revenueCents)} collected`,
-      href: "/admin/applications",
+      href: `${ADMIN_BASE}/applications`,
       icon: FolderOpen,
       tone: "green",
     },
@@ -219,7 +220,7 @@ export function DashboardHome({
             </span>
             <strong>Queue by state</strong>
           </div>
-          <Link href="/admin/applications" prefetch={false} className="admin-widget-link">
+          <Link href={`${ADMIN_BASE}/applications`} prefetch={false} className="admin-widget-link">
             View all
           </Link>
         </div>
@@ -318,7 +319,7 @@ export function DashboardHome({
             </span>
             <strong>Action queue</strong>
           </div>
-          <Link href="/admin/applications" prefetch={false} className="admin-widget-link">
+          <Link href={`${ADMIN_BASE}/applications`} prefetch={false} className="admin-widget-link">
             View all
           </Link>
         </div>
@@ -330,7 +331,7 @@ export function DashboardHome({
           <ul className="admin-task-list">
             {actionQueue.map((app) => (
               <li key={app.id}>
-                <Link href={`/admin/applications/${app.id}`} prefetch={false}>
+                <Link href={`${ADMIN_BASE}/applications/${app.id}`} prefetch={false}>
                   <span className="admin-task-title">
                     {customerName(app.firstName, app.lastName) || app.reference}
                   </span>
@@ -354,7 +355,7 @@ export function DashboardHome({
             </span>
             <strong>Recent ID scans</strong>
           </div>
-          <Link href="/admin/documents" prefetch={false} className="admin-widget-link">
+          <Link href={`${ADMIN_BASE}/documents`} prefetch={false} className="admin-widget-link">
             View all
           </Link>
         </div>
@@ -367,7 +368,7 @@ export function DashboardHome({
             {docs.slice(0, 4).map((row) => (
               <li key={row.id}>
                 <Images size={16} />
-                <Link href={`/admin/applications/${row.id}?tab=documents`} prefetch={false}>
+                <Link href={`${ADMIN_BASE}/applications/${row.id}?tab=documents`} prefetch={false}>
                   <span className="admin-task-title">{row.reference}</span>
                   <span className="admin-task-meta">
                     {customerName(row.firstName, row.lastName)} · {row.documents.length} file
@@ -389,7 +390,7 @@ export function DashboardHome({
             </span>
             <strong>Open for fulfillment</strong>
           </div>
-          <Link href="/admin/deliver" prefetch={false} className="admin-widget-link">
+          <Link href={`${ADMIN_BASE}/deliver`} prefetch={false} className="admin-widget-link">
             Deliver
           </Link>
         </div>
@@ -408,7 +409,7 @@ export function DashboardHome({
                   </div>
                 </div>
                 <Link
-                  href={`/admin/applications/${app.id}`}
+                  href={`${ADMIN_BASE}/applications/${app.id}`}
                   prefetch={false}
                   className="admin-btn admin-btn-secondary"
                   style={{ padding: "0.35rem 0.7rem", fontSize: 12 }}
@@ -430,7 +431,7 @@ export function DashboardHome({
             </span>
             <strong>Recent paid orders</strong>
           </div>
-          <Link href="/admin/applications" prefetch={false} className="admin-widget-link">
+          <Link href={`${ADMIN_BASE}/applications`} prefetch={false} className="admin-widget-link">
             View all
           </Link>
         </div>
@@ -442,7 +443,7 @@ export function DashboardHome({
           <ul className="admin-file-list">
             {orders.slice(0, 4).map((app) => (
               <li key={app.id}>
-                <Link href={`/admin/applications/${app.id}`} prefetch={false}>
+                <Link href={`${ADMIN_BASE}/applications/${app.id}`} prefetch={false}>
                   <span className="admin-task-title">{customerName(app.firstName, app.lastName) || app.email}</span>
                   <span className="admin-task-meta">
                     {stateLabel(app.stateSlug)} · {money(app.amountCents)}

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import { AnimatePresence, motion } from "framer-motion";
 import type { LicenseOption, StateConfig, TokenizedPayment } from "@/lib/state-config";
+import type { CheckoutStartResult, PaidResult } from "@/components/PaymentStep";
 import { computeOrderTotal, displayPrice } from "@/lib/state-config";
 import { US_STATE_OPTIONS } from "@/lib/us-states";
 import { formatPrice } from "@/lib/format";
@@ -435,7 +436,7 @@ export function MichiganCompetitorApply({ config }: { config: StateConfig }) {
     return "OTHER";
   }
 
-  function buildPayload(payment: TokenizedPayment) {
+  function buildPayload(payment?: TokenizedPayment) {
     const dob = `${pad2(monthIndex(form.dobMonth))}/${pad2(form.dobDay)}/${form.dobYear}`;
     const data: Record<string, string | boolean | number> = {
       idType: "Driver's License/State ID",
@@ -473,10 +474,37 @@ export function MichiganCompetitorApply({ config }: { config: StateConfig }) {
       addOnIds: [] as string[],
       data,
       consents: { accurateAndTerms: true as const },
-      payment,
+      ...(payment ? { payment } : {}),
       ...(applicationIdRef.current ? { applicationId: applicationIdRef.current } : {}),
       ...(promoCodeRef.current ? { promoCode: promoCodeRef.current } : {}),
     };
+  }
+
+  async function startCheckout(promoCode?: string | null): Promise<CheckoutStartResult> {
+    promoCodeRef.current = promoCode ?? null;
+    try {
+      const res = await fetch("/api/applications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(buildPayload()),
+      });
+      const json = (await res.json()) as CheckoutStartResult;
+      if (json.applicationId) applicationIdRef.current = json.applicationId;
+      if (!res.ok && !json.useLocalCard && !json.awaitingPayment) {
+        return { ok: false, message: json.message ?? "Payment could not be started. Please try again." };
+      }
+      return json;
+    } catch {
+      return { ok: false, message: "We could not reach the server. Check your connection and try again." };
+    }
+  }
+
+  function handlePaid(result: PaidResult) {
+    applicationIdRef.current = null;
+    setConversionValue(result.amount > 0 ? result.amount : total);
+    setReference(result.reference);
+    setConfirmationEmail(result.email ?? form.email.trim() ?? null);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   async function handlePay(payment: TokenizedPayment, promoCode?: string | null) {
@@ -1073,6 +1101,9 @@ export function MichiganCompetitorApply({ config }: { config: StateConfig }) {
                 processing={processing}
                 error={paymentError}
                 onPay={handlePay}
+                onStartCheckout={startCheckout}
+                onPaid={handlePaid}
+                applicantEmail={form.email.trim()}
                 compact
                 licenseSummary={{
                   name: licenseLabel(selectedLicense),
