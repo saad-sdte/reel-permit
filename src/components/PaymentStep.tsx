@@ -157,7 +157,8 @@ export function PaymentStep({
   const brand = useMemo(() => detectBrand(number), [number]);
   const busy = processing || tokenizing || starting || confirming;
   const { amount: chargeTotal } = applyPromoCode(total, appliedPromo);
-  const liveWhop = Boolean(whopSessionId || whopPlanId);
+  const zeroDue = chargeTotal === 0 && Boolean(appliedPromo);
+  const liveWhop = !zeroDue && Boolean(whopSessionId || whopPlanId);
 
   useEffect(() => {
     let cancelled = false;
@@ -214,8 +215,43 @@ export function PaymentStep({
     return message === null;
   }
 
+  async function completeZeroOrder() {
+    if (busy) return;
+    setTokenizeError(null);
+    setTokenizing(true);
+    try {
+      const result = await onStartRef.current(appliedPromo);
+      if (result.applicationId) setApplicationId(result.applicationId);
+      if (result.reference) setPendingReference(result.reference);
+      const paidWithoutCard =
+        Boolean(result.reference) &&
+        (result.alreadyPaid ||
+          result.duplicate ||
+          (result.ok !== false && !result.awaitingPayment && result.amount === 0));
+      if (paidWithoutCard && result.reference) {
+        onPaidRef.current({
+          reference: result.reference,
+          email: applicantEmail ?? null,
+          amount: typeof result.amount === "number" ? result.amount : 0,
+        });
+        return;
+      }
+      setTokenizeError(
+        result.message ?? "This $0 promo could not be completed. Please try again.",
+      );
+    } catch {
+      setTokenizeError("We could not reach the server. Check your connection and try again.");
+    } finally {
+      setTokenizing(false);
+    }
+  }
+
   async function handleLocalPay() {
     if (busy) return;
+    if (zeroDue) {
+      await completeZeroOrder();
+      return;
+    }
     setTokenizeError(null);
     const nextErrors: Partial<Record<FieldKey, string>> = {};
     for (const key of ["number", "expiry", "cvv", "zip"] as FieldKey[]) {
@@ -363,7 +399,7 @@ export function PaymentStep({
           </div>
         )}
 
-        <div className={`rounded-2xl border border-forest-200 bg-gradient-to-br from-forest-50 via-white to-sky-50 px-4 py-4 ${compact ? "hidden" : ""}`}>
+        <div className={`rounded-2xl border border-forest-200 bg-gradient-to-br from-forest-50 via-white to-sky-50 px-4 py-4 ${compact || zeroDue ? "hidden" : ""}`}>
           <div className="flex gap-3">
             <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-forest-100">
               <ShieldCheck className="h-5 w-5 text-forest-700" aria-hidden="true" />
@@ -388,11 +424,18 @@ export function PaymentStep({
           </div>
         </div>
 
-        {starting ? (
+        {starting && !zeroDue ? (
           <div className="mt-5 flex min-h-[160px] items-center justify-center rounded-xl border border-slate-200 bg-slate-50">
             <p className="inline-flex items-center gap-2 text-sm text-slate-600">
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
               Preparing secure checkout…
+            </p>
+          </div>
+        ) : zeroDue ? (
+          <div className="mt-5 rounded-xl border border-forest-200 bg-forest-50 px-4 py-4 text-sm text-navy">
+            <p className="font-semibold">No payment is due</p>
+            <p className="mt-1 text-slate-600">
+              Promo {appliedPromo} covers this order. You do not need to enter a card.
             </p>
           </div>
         ) : liveWhop ? (
@@ -506,18 +549,18 @@ export function PaymentStep({
         )}
 
         <p className="mt-6 text-sm leading-relaxed text-slate-600">
-          By paying, you agree to our{" "}
+          By {zeroDue ? "continuing" : "paying"}, you agree to our{" "}
           <Link href="/terms" target="_blank" className="font-medium text-forest-700 underline">
             Terms of Service
           </Link>{" "}
           and{" "}
           <Link href="/privacy" target="_blank" className="font-medium text-forest-700 underline">
             Privacy Policy
-          </Link>{" "}
-          and authorize ReelPermit to charge your credit card.
+          </Link>
+          {zeroDue ? "." : " and authorize ReelPermit to charge your credit card."}
         </p>
 
-        {!liveWhop && !starting && (
+        {((!liveWhop && !starting) || zeroDue) && (
           <Button
             variant="accent"
             size="lg"
@@ -531,6 +574,8 @@ export function PaymentStep({
                 <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
                 {t("pay.processing")}
               </>
+            ) : zeroDue ? (
+              <>Complete {formatPrice(0)} order</>
             ) : (
               <>
                 <Lock className="h-4 w-4" aria-hidden="true" />
@@ -539,10 +584,12 @@ export function PaymentStep({
             )}
           </Button>
         )}
-        <p className="mt-3 flex items-center justify-center gap-2 text-xs text-slate-500">
-          <Lock className="h-3.5 w-3.5" aria-hidden="true" />
-          Your card is charged once, and your receipt shows &ldquo;REELPERMIT&rdquo;.
-        </p>
+        {!zeroDue && (
+          <p className="mt-3 flex items-center justify-center gap-2 text-xs text-slate-500">
+            <Lock className="h-3.5 w-3.5" aria-hidden="true" />
+            Your card is charged once, and your receipt shows &ldquo;REELPERMIT&rdquo;.
+          </p>
+        )}
 
         {showPromo && (
           <div className="mt-4">
