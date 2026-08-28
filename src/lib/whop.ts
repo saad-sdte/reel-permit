@@ -24,7 +24,7 @@ export async function createWhopCheckoutSession(args: {
   title: string;
   applicationId: string;
   reference: string;
-}): Promise<{ sessionId: string; planId: string | null; purchaseUrl: string | null }> {
+}): Promise<{ sessionId: string; planId: string; purchaseUrl: string | null }> {
   const accountId = env("WHOP_COMPANY_ID");
   if (!accountId) throw new Error("WHOP_COMPANY_ID is not set");
 
@@ -50,28 +50,24 @@ export async function createWhopCheckoutSession(args: {
       initial_price: initialPrice,
       title,
       force_create_new_plan: true,
+      visibility: "visible",
+      // Copied onto the payment when the buyer checks out this plan in the embed.
+      metadata,
       ...(productId ? { product_id: productId } : {}),
     },
   });
 
-  const planId = cfg.plan?.id ?? null;
-
-  try {
-    const session = await client.checkoutSessions.create({
-      checkout_configuration: cfg.id,
-      metadata,
-      return_url: `${site}/apply?whop=return`,
-    });
-    return {
-      sessionId: session.id,
-      planId,
-      purchaseUrl: cfg.purchase_url ?? null,
-    };
-  } catch {
-    return {
-      sessionId: cfg.id,
-      planId,
-      purchaseUrl: cfg.purchase_url ?? null,
-    };
+  const planId = cfg.plan?.id;
+  if (!planId) {
+    throw new Error("Checkout configuration did not return a plan id");
   }
+
+  // WhopCheckoutEmbed puts sessionId in the iframe path (`/embedded/checkout/{id}/`).
+  // Only plan_ ids resolve there. ch_ (checkout config) and chs_ (checkout session)
+  // both 404 with Whop's "Nothing to see here yet" page. Keep cfg.id for logs only.
+  return {
+    sessionId: cfg.id,
+    planId,
+    purchaseUrl: cfg.purchase_url ?? null,
+  };
 }

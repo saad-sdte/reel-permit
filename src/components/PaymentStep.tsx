@@ -143,7 +143,6 @@ export function PaymentStep({
   const [tokenizing, setTokenizing] = useState(false);
   const [tokenizeError, setTokenizeError] = useState<string | null>(null);
   const [starting, setStarting] = useState(true);
-  const [whopSessionId, setWhopSessionId] = useState<string | null>(null);
   const [whopPlanId, setWhopPlanId] = useState<string | null>(null);
   const [applicationId, setApplicationId] = useState<string | null>(null);
   const [pendingReference, setPendingReference] = useState<string | null>(null);
@@ -158,7 +157,7 @@ export function PaymentStep({
   const busy = processing || tokenizing || starting || confirming;
   const { amount: chargeTotal } = applyPromoCode(total, appliedPromo);
   const zeroDue = chargeTotal === 0 && Boolean(appliedPromo);
-  const liveWhop = !zeroDue && Boolean(whopSessionId || whopPlanId);
+  const liveWhop = !zeroDue && Boolean(whopPlanId);
 
   useEffect(() => {
     let cancelled = false;
@@ -178,15 +177,13 @@ export function PaymentStep({
           });
           return;
         }
-        if (result.awaitingPayment && (result.checkoutSessionId || result.planId)) {
-          setWhopSessionId(result.checkoutSessionId ?? null);
-          setWhopPlanId(result.planId ?? null);
+        if (result.awaitingPayment && result.planId) {
+          setWhopPlanId(result.planId);
           return;
         }
         if (result.ok === false) {
           setTokenizeError(result.message ?? "Payment could not be started. Please try again.");
         }
-        setWhopSessionId(null);
         setWhopPlanId(null);
       })
       .catch(() => {
@@ -338,6 +335,7 @@ export function PaymentStep({
   const embedProps = {
     theme: "light" as const,
     skipRedirect: true,
+    returnUrl: `${(process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.reelpermit.com").replace(/\/$/, "")}/apply?whop=return`,
     hidePrice: true,
     hideAddressForm: true,
     hideEmail: Boolean(applicantEmail),
@@ -440,11 +438,7 @@ export function PaymentStep({
           </div>
         ) : liveWhop ? (
           <div className="mt-5">
-            {whopSessionId?.startsWith("chs_") || !whopPlanId ? (
-              <WhopCheckoutEmbed sessionId={whopSessionId!} {...embedProps} />
-            ) : (
-              <WhopCheckoutEmbed planId={whopPlanId} {...embedProps} />
-            )}
+            <WhopCheckoutEmbed planId={whopPlanId!} {...embedProps} />
             {confirming && (
               <p className="mt-3 inline-flex items-center gap-2 text-sm text-slate-600">
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
