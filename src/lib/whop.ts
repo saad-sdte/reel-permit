@@ -35,6 +35,9 @@ export async function createWhopCheckoutSession(args: {
     application_id: args.applicationId,
     reference: args.reference,
   };
+  // Whop dynamic plans reject titles longer than 30 characters.
+  const title = (args.reference || args.title || "ReelPermit").trim().slice(0, 30);
+  const initialPrice = Math.round(args.amountUsd * 100) / 100;
 
   const cfg = await client.checkoutConfigurations.create({
     account_id: accountId,
@@ -44,8 +47,8 @@ export async function createWhopCheckoutSession(args: {
     plan: {
       plan_type: "one_time",
       currency: "usd",
-      initial_price: args.amountUsd,
-      title: args.title,
+      initial_price: initialPrice,
+      title,
       force_create_new_plan: true,
       ...(productId ? { product_id: productId } : {}),
     },
