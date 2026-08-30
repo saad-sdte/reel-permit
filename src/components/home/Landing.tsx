@@ -2,8 +2,9 @@ import Link from "next/link";
 import { buttonClasses } from "@/components/ui/Button";
 import { FAQ_ITEMS } from "@/data/faq";
 import { config } from "@/data/states/michigan";
+import { config as paConfig } from "@/data/states/pennsylvania";
 import { formatPrice } from "@/lib/format";
-import { displayPrice } from "@/lib/state-config";
+import { displayPrice, itemCustomerPrice } from "@/lib/state-config";
 import { HeroSection } from "@/components/motion/HeroSection";
 import { LicenseCards } from "@/components/motion/LicenseCards";
 import { SUPPORT_EMAIL, SUPPORT_MAILTO } from "@/lib/contact";
@@ -41,6 +42,9 @@ export function Landing() {
   });
   const dayPrice = formatPrice(featured[0].price);
   const annualPrice = formatPrice(featured[1].price);
+  const paFrom = formatPrice(
+    Math.min(...paConfig.licenses.map((l) => itemCustomerPrice(l))),
+  );
 
   return (
     <>
@@ -66,16 +70,20 @@ export function Landing() {
           <div className="max-w-2xl" data-aos="fade-up">
             <h2 className="font-display text-3xl text-navy sm:text-4xl">Licenses we file</h2>
             <p className="mt-3 text-ink/70">
-              Same MDNR products you would buy yourself. The price below is the bundled total —
-              state license plus our filing work. MDNR sells the same licenses cheaper if you
-              file on their portal.
+              Michigan MDNR products below. Pennsylvania licenses — including the
+              combination package — are on the Pennsylvania application. Official
+              agencies sell the same licenses cheaper if you file yourself.
             </p>
           </div>
           <LicenseCards items={[...featured]} />
           <p className="mt-4 text-sm text-ink/50" data-aos="fade-up">
-            Nonresident short-term licenses (2–9 day) are on the application.{" "}
+            Michigan nonresident short-term licenses (2–9 day) are on the{" "}
             <Link href="/apply" className="font-semibold text-copper underline-offset-2 hover:underline">
-              Open the form
+              Michigan form
+            </Link>
+            . Pennsylvania from {paFrom} on the{" "}
+            <Link href="/pennsylvania" className="font-semibold text-copper underline-offset-2 hover:underline">
+              Pennsylvania form
             </Link>
             .
           </p>
@@ -89,8 +97,8 @@ export function Landing() {
           </h2>
           <ol className="mt-10 grid gap-10 sm:grid-cols-3">
             {[
-              ["You apply", "Residency, license, ID photos, and the details Michigan asks for. A few minutes if you have a license picture handy."],
-              ["We file with MDNR", "A reviewer checks the packet, then purchases on mdnr-elicense.com — the same portal you could use yourself."],
+              ["You apply", "Residency, license, identification, and the details the state agency asks for."],
+              ["We file on the portal", "A reviewer checks the packet, then purchases on MDNR eLicense or HuntFishPA — the same portals you could use yourself."],
               ["You get the license", "The state generates it. We email that file to you. Carry it on your phone or print it."],
             ].map(([title, body], i) => (
               <li key={title} data-aos="fade-up" data-aos-delay={i * 110}>
@@ -132,22 +140,27 @@ export function Landing() {
       <section className="bg-navy py-14 text-white" data-aos="fade-up">
         <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-6 px-4 sm:flex-row sm:items-center sm:px-6">
           <div>
-            <h2 className="font-display text-3xl text-white">Ready to fish Michigan?</h2>
+            <h2 className="font-display text-3xl text-white">Ready to apply?</h2>
             <p className="mt-2 max-w-xl text-white/70">
-              Independent service — not MDNR. Questions:{" "}
+              Questions:{" "}
               <a href={SUPPORT_MAILTO} className="underline underline-offset-2">
                 {SUPPORT_EMAIL}
               </a>
-              . You can always buy the same license on the{" "}
+              . You can also buy the same license on an{" "}
               <Link href="/official-sites" className="underline underline-offset-2">
                 official state site
               </Link>
               .
             </p>
           </div>
-          <Link href="/apply" className={buttonClasses("primary", "lg")}>
-            Start application
-          </Link>
+          <div className="flex flex-wrap gap-3">
+            <Link href="/apply" className={buttonClasses("primary", "lg")}>
+              Michigan
+            </Link>
+            <Link href="/pennsylvania" className={buttonClasses("inverse", "lg")}>
+              Pennsylvania
+            </Link>
+          </div>
         </div>
       </section>
     </>

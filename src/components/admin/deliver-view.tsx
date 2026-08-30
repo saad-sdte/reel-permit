@@ -14,6 +14,7 @@ const STATE_NAMES = [
   "North Carolina",
   "South Carolina",
   "Texas",
+  "Pennsylvania",
 ];
 
 const STATE_LABEL: Record<string, string> = {
@@ -24,6 +25,7 @@ const STATE_LABEL: Record<string, string> = {
   "north-carolina": "North Carolina",
   "south-carolina": "South Carolina",
   texas: "Texas",
+  pennsylvania: "Pennsylvania",
 };
 
 const ACCEPT = "application/pdf,image/png,image/jpeg";

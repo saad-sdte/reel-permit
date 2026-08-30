@@ -16,7 +16,8 @@ export type PortalFillStateSlug =
   | "north-carolina"
   | "south-carolina"
   | "california"
-  | "colorado";
+  | "colorado"
+  | "pennsylvania";
 
 /** ID image / PDF the extension should attach to a file input. */
 export interface PortalFillFile {
@@ -90,6 +91,11 @@ export const PORTAL_BY_SLUG: Record<
     portalName: "CPWshop",
     portalUrl: "https://www.cpwshop.com",
     createUrl: "https://www.cpwshop.com/signup.page",
+  },
+  pennsylvania: {
+    portalName: "HuntFishPA",
+    portalUrl: "https://huntfish.pa.gov/",
+    createUrl: "https://huntfish.pa.gov/",
   },
 };
 
@@ -220,6 +226,7 @@ export function normalizeStateSlug(slug: string): PortalFillStateSlug | null {
   if (s === "sc" || s === "southcarolina") return "south-carolina";
   if (s === "ca") return "california";
   if (s === "co") return "colorado";
+  if (s === "pa") return "pennsylvania";
   if (s in PORTAL_BY_SLUG) return s as PortalFillStateSlug;
   return null;
 }

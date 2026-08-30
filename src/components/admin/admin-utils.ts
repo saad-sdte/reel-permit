@@ -8,6 +8,7 @@ export const STATES = [
   "california",
   "colorado",
   "north-carolina",
+  "pennsylvania",
 ] as const;
 
 export const STATUS_COLOR: Record<string, string> = {
@@ -70,6 +71,7 @@ const FIELD_LABELS: Record<string, string> = {
   socialSecurityNumber: "SSN",
   nonUsAddress: "Non-US address",
   michiganResident: "Michigan resident",
+  pennsylvaniaResident: "Pennsylvania resident",
   licenseStartDate: "License start",
   updatesEmail: "Email updates",
   updatesText: "Text updates",

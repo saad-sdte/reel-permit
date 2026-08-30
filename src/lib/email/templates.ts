@@ -14,6 +14,7 @@ import {
   textFooter,
 } from "./email-layout";
 import { buildApplicantDetails } from "./applicant-details";
+import { agencyCopy } from "@/lib/agency-copy";
 
 /* ------------------------------------------------------------------ */
 /* shared helpers                                                      */
@@ -141,6 +142,7 @@ export function orderConfirmationEmail(ctx: OrderEmailContext): {
 } {
   const first = customerFirstName(ctx);
   const state = stateName(ctx);
+  const agency = agencyCopy(ctx.config?.slug ?? ctx.app.stateSlug);
   const total = formatPrice(orderTotal(ctx));
   const addOns = addOnNames(ctx);
   const subject = `ReelPermit filed your ${state} application — ${ctx.app.reference}`;
@@ -164,10 +166,10 @@ export function orderConfirmationEmail(ctx: OrderEmailContext): {
   ].join("");
 
   const bodyHtml = `
-    <h1 style="margin:0;font-size:22px;line-height:1.3;color:${BRAND.navy};">Michigan desk has your file${first ? `, ${esc(first)}` : ""}.</h1>
+    <h1 style="margin:0;font-size:22px;line-height:1.3;color:${BRAND.navy};">ReelPermit desk has your file${first ? `, ${esc(first)}` : ""}.</h1>
     <p style="margin:14px 0 0;font-size:14px;line-height:1.65;color:${BRAND.slate600};">
       Payment of <strong style="color:${BRAND.navy};">${esc(total)}</strong> is in. ReelPermit will review this
-      <strong style="color:${BRAND.navy};">${esc(state)}</strong> fishing-license file and submit it on the official MDNR portal — we do not issue licenses ourselves.
+      <strong style="color:${BRAND.navy};">${esc(state)}</strong> fishing-license file and submit it on the official ${esc(agency.portal)} portal — we do not issue licenses ourselves.
     </p>
     ${referenceBanner(ctx.app.reference)}
     ${detailCard(orderRows, { heading: "What you ordered" })}
@@ -175,22 +177,22 @@ export function orderConfirmationEmail(ctx: OrderEmailContext): {
     ${applicant.html}
     <h2 style="margin:26px 0 0;font-size:16px;color:${BRAND.navy};">On our side next</h2>
     ${stepsBlock([
-      { title: "Desk review", body: "Someone checks the file against MDNR rules — usually within one business day." },
-      { title: "Official purchase", body: "We buy the license on Michigan’s eLicense portal. Your statement shows “" + ctx.app.payment.descriptor + "”." },
-      { title: "PDF to this inbox", body: "When MDNR issues the document, we email it here as an attachment." },
+      { title: "Desk review", body: "Someone checks the file against " + agency.short + " rules — usually within one business day." },
+      { title: "Official purchase", body: "We buy the license on the official " + agency.portal + " portal. Your statement shows “" + ctx.app.payment.descriptor + "”." },
+      { title: "PDF to this inbox", body: "When " + agency.short + " issues the document, we email it here as an attachment." },
     ])}
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0 0;border-left:3px solid ${BRAND.gold};background:${BRAND.navy50};border-radius:0 4px 4px 0;">
       <tr><td style="padding:13px 18px;">
         <p style="margin:0;font-size:13px;line-height:1.6;color:${BRAND.forest};">
-          <strong>Refunds:</strong> full refund until we complete the MDNR purchase. After that, state rules apply.
+          <strong>Refunds:</strong> full refund until we complete the official state purchase. After that, state rules apply.
         </p>
       </td></tr>
     </table>`;
 
   const text = [
-    `Michigan desk has your file${first ? `, ${first}` : ""}.`,
+    `ReelPermit desk has your file${first ? `, ${first}` : ""}.`,
     ``,
-    `Payment of ${total} is in. ReelPermit will review this ${state} fishing-license file and submit it on the official MDNR portal — we do not issue licenses ourselves.`,
+    `Payment of ${total} is in. ReelPermit will review this ${state} fishing-license file and submit it on the official ${agency.portal} portal — we do not issue licenses ourselves.`,
     ``,
     `File number: ${ctx.app.reference}`,
     `(Quote this number if you write to support.)`,
@@ -212,14 +214,14 @@ export function orderConfirmationEmail(ctx: OrderEmailContext): {
     ...(applicant.textLines.length ? [``] : []),
     `ON OUR SIDE NEXT`,
     `1. Desk review — usually within one business day.`,
-    `2. Official purchase on Michigan’s eLicense portal.`,
-    `3. PDF emailed here when MDNR issues it.`,
+    `2. Official purchase on the official ${agency.portal} portal.`,
+    `3. PDF emailed here when ${agency.short} issues it.`,
     ``,
-    `Refunds: full refund until we complete the MDNR purchase. After that, state rules apply.`,
+    `Refunds: full refund until we complete the official state purchase. After that, state rules apply.`,
     textFooter(),
   ].join("\n");
 
-  return { subject, html: emailShell({ preheader: `File ${ctx.app.reference} · ${state} · ${total} — MDNR PDF follows after we purchase.`, kicker: "File received", bodyHtml }), text };
+  return { subject, html: emailShell({ preheader: `File ${ctx.app.reference} · ${state} · ${total} — official PDF follows after we purchase.`, kicker: "File received", bodyHtml }), text };
 }
 
 /* ------------------------------------------------------------------ */
@@ -546,7 +548,8 @@ export function licenseDeliveryEmail(input: LicenseDeliveryInput): {
   text: string;
 } {
   const first = input.customerName.trim().split(/\s+/)[0] || "";
-  const subject = `Michigan license PDF — ${input.reference}`;
+  const agency = agencyCopy(input.stateName.toLowerCase().includes("penn") ? "pennsylvania" : "michigan");
+  const subject = `${input.stateName} license PDF — ${input.reference}`;
 
   const noteHtml = input.note
     ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:18px 0 0;border-left:3px solid ${BRAND.forest500};background:${BRAND.forest50};border-radius:0 10px 10px 0;">
@@ -563,10 +566,10 @@ export function licenseDeliveryEmail(input: LicenseDeliveryInput): {
     : "";
 
   const bodyHtml = `
-    <h1 style="margin:0;font-size:22px;color:${BRAND.navy};">Official MDNR document attached${first ? `, ${esc(first)}` : ""}.</h1>
+    <h1 style="margin:0;font-size:22px;color:${BRAND.navy};">Official ${esc(agency.short)} document attached${first ? `, ${esc(first)}` : ""}.</h1>
     <p style="margin:14px 0 0;font-size:14px;line-height:1.65;color:${BRAND.slate600};">
-      ReelPermit purchased this <strong style="color:${BRAND.navy};">${esc(input.stateName)}</strong> fishing license on the state portal. The PDF is on this email.
-      Save it or print it, carry it on the water, and follow Michigan regulations.
+      ReelPermit purchased this <strong style="color:${BRAND.navy};">${esc(input.stateName)}</strong> fishing license on the ${esc(agency.portal)} portal. The PDF is on this email.
+      Save it or print it, carry it on the water, and follow ${esc(input.stateName)} regulations.
     </p>
     ${referenceBanner(input.reference)}
     ${noteHtml}
@@ -577,23 +580,23 @@ export function licenseDeliveryEmail(input: LicenseDeliveryInput): {
     </p>`;
 
   const text = [
-    `Official MDNR document attached${first ? `, ${first}` : ""}.`,
+    `Official ${agency.short} document attached${first ? `, ${first}` : ""}.`,
     ``,
-    `ReelPermit purchased this ${input.stateName} fishing license on the state portal. The PDF is on this email.`,
+    `ReelPermit purchased this ${input.stateName} fishing license on the ${agency.portal} portal. The PDF is on this email.`,
     ``,
     `Reference: ${input.reference}`,
     ``,
     ...(input.note ? [input.note, ``] : []),
     `Attached: ${input.attachmentNames.join(", ") || "license document"}`,
     ``,
-    `Save it or print it, carry it on the water, and follow Michigan regulations.`,
+    `Save it or print it, carry it on the water, and follow ${input.stateName} regulations.`,
     `If anything looks wrong, reply to this email with your reference number and we'll make it right.`,
     textFooter(),
   ].join("\n");
 
   return {
     subject,
-    html: emailShell({ preheader: `MDNR license PDF attached — file ${input.reference}.`, kicker: "License PDF", bodyHtml }),
+    html: emailShell({ preheader: `${agency.short} license PDF attached — file ${input.reference}.`, kicker: "License PDF", bodyHtml }),
     text,
   };
 }

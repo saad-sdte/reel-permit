@@ -6,7 +6,7 @@ import { buttonClasses } from "@/components/ui/Button";
 
 export const metadata: Metadata = {
   title: "FAQ",
-  description: "Answers about ReelPermit, pricing, and Michigan licenses.",
+  description: "Answers about ReelPermit, pricing, and Michigan and Pennsylvania licenses.",
 };
 
 export default function FaqPage() {
@@ -20,9 +20,14 @@ export default function FaqPage() {
           </details>
         ))}
       </div>
-      <Link href="/apply" className={`${buttonClasses("primary", "lg")} mt-10`}>
-        Start application
-      </Link>
+      <div className="mt-10 flex flex-wrap gap-3">
+        <Link href="/apply" className={buttonClasses("primary", "lg")}>
+          Michigan application
+        </Link>
+        <Link href="/pennsylvania" className={buttonClasses("outline", "lg")}>
+          Pennsylvania application
+        </Link>
+      </div>
     </InnerPage>
   );
 }

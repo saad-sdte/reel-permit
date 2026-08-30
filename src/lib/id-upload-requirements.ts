@@ -31,6 +31,7 @@ export function missingRequiredIdUploads(
     "california",
     "colorado",
   ].includes(stateSlug);
+  // Pennsylvania HuntFishPA does not require DL photo uploads.
   if (needsId) {
     if (!hasUpload(data.dlFrontData)) {
       errors["data.dlFrontData"] = ["Upload the front of your Driver's License."];

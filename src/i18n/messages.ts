@@ -172,6 +172,13 @@ const en: Dict = {
   "mi.noNonResident": "No, Non-Resident",
   "mi.residentBanner": "✓ You are a Michigan Resident",
 
+  "pa.step0Title": "Identification & License",
+  "pa.step0Sub": "Tell us about your residency and provide your ID details.",
+  "pa.areYouResident": "Are you a Pennsylvania Resident?",
+  "pa.yesResident": "Yes, PA Resident",
+  "pa.noNonResident": "No, Non-Resident",
+  "pa.residentBanner": "✓ You are a Pennsylvania Resident",
+
   // NC
   "nc.step0Title": "Identification & License",
   "nc.step0Sub": "Tell us about your residency and provide your ID details.",
@@ -378,6 +385,13 @@ const es: Dict = {
   "mi.yesResident": "Sí, residente de MI",
   "mi.noNonResident": "No, no residente",
   "mi.residentBanner": "✓ Eres residente de Michigan",
+
+  "pa.step0Title": "Identificación y licencia",
+  "pa.step0Sub": "Cuéntanos sobre tu residencia y proporciona los datos de tu ID.",
+  "pa.areYouResident": "¿Eres residente de Pensilvania?",
+  "pa.yesResident": "Sí, residente de PA",
+  "pa.noNonResident": "No, no residente",
+  "pa.residentBanner": "✓ Eres residente de Pensilvania",
 
   "nc.step0Title": "Identificación y licencia",
   "nc.step0Sub": "Cuéntanos sobre tu residencia y proporciona los datos de tu ID.",

@@ -866,6 +866,7 @@ async function ensureDemoSeed() {
     "california",
     "colorado",
     "north-carolina",
+    "pennsylvania",
   ];
   const statuses: ApplicationStatus[] = [
     "received",

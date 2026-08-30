@@ -52,28 +52,28 @@ export function HeroSection({ dayPrice, annualPrice }: { dayPrice: string; annua
         animate="show"
       >
         <motion.p variants={child} className="text-sm font-semibold tracking-wide text-gold-300">
-          Michigan · fishing licenses
+          Michigan &amp; Pennsylvania · fishing licenses
         </motion.p>
         <motion.h1
           variants={child}
           className="mt-3 max-w-3xl font-display text-4xl leading-tight text-white sm:text-6xl"
         >
-          Skip the MDNR maze. Get the real license.
+          Skip the official maze. Get the real license.
         </motion.h1>
         <motion.p variants={child} className="mt-5 max-w-xl text-lg leading-relaxed text-white/85">
-          Fill one form. We buy it on the official eLicense portal. Michigan emails you nothing —
-          we send you the state-issued document.
+          Fill one form. We buy it on the official state portal. The agency issues
+          the document — we email it to you.
         </motion.p>
         <motion.div variants={child} className="mt-8 flex flex-wrap items-center gap-3">
           <Magnetic>
             <Link href="/apply" className={buttonClasses("primary", "lg")}>
-              Start application
+              Michigan application
             </Link>
           </Magnetic>
           <Magnetic>
-            <a href="#licenses" className={buttonClasses("inverse", "lg")}>
-              See prices
-            </a>
+            <Link href="/pennsylvania" className={buttonClasses("inverse", "lg")}>
+              Pennsylvania application
+            </Link>
           </Magnetic>
         </motion.div>
         <motion.p variants={child} className="mt-6 text-sm text-white/70">

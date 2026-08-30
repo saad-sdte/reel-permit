@@ -1,5 +1,5 @@
 import type { StateConfig } from "@/lib/state-config";
-import { addOnsForLicense, displayPrice } from "@/lib/state-config";
+import { addOnsForLicense, itemCustomerPrice } from "@/lib/state-config";
 import { formatPrice } from "@/lib/format";
 import { Card } from "@/components/ui/Card";
 
@@ -28,8 +28,8 @@ export function PriceSummary({
     (a) => a.required || (addOnIds ?? []).includes(a.id),
   );
 
-  const licensePrice = license ? displayPrice(license.price) : 0;
-  const addOnsTotal = selectedAddOns.reduce((sum, a) => sum + displayPrice(a.price), 0);
+  const licensePrice = license ? itemCustomerPrice(license) : 0;
+  const addOnsTotal = selectedAddOns.reduce((sum, a) => sum + itemCustomerPrice(a), 0);
   const total = licensePrice + addOnsTotal;
 
   return (

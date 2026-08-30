@@ -29,6 +29,23 @@ export function displayPrice(basePrice: number): number {
 }
 
 /**
+ * Customer-facing price for a single license or add-on.
+ *
+ * States priced with EXACT customer prices (e.g. Pennsylvania) set
+ * `customerPrice` on every license/add-on; that amount is shown and charged
+ * verbatim, and `price` keeps the official base fee for reference/portal
+ * filing only. Legacy states omit `customerPrice` and use displayPrice().
+ */
+export function itemCustomerPrice(item: {
+  price: number;
+  customerPrice?: number;
+}): number {
+  return typeof item.customerPrice === "number"
+    ? item.customerPrice
+    : displayPrice(item.price);
+}
+
+/**
  * Server-authoritative order total (in USD) for a license + add-ons.
  * ALWAYS computed from the state config — never trust a client-sent amount.
  */
@@ -40,6 +57,11 @@ export function computeOrderTotal(
   const license = config.licenses.find((l) => l.id === licenseId);
   const applicable = addOnsForLicense(config, licenseId || undefined);
   const selected = applicable.filter((a) => a.required || addOnIds.includes(a.id));
+  const items = [...(license ? [license] : []), ...selected];
+  if (items.length > 0 && items.every((i) => typeof i.customerPrice === "number")) {
+    const total = items.reduce((sum, i) => sum + (i.customerPrice as number), 0);
+    return Math.round(total * 100) / 100;
+  }
   const base =
     (license?.price ?? 0) + selected.reduce((sum, a) => sum + a.price, 0);
   return displayPrice(base);
@@ -105,6 +127,8 @@ export interface AddOn {
   id: string; // kebab-case, e.g. 'second-rod-validation'
   name: string; // EXACT official name
   price: number; // official price in USD
+  /** EXACT customer-facing price. When set, markup is bypassed. */
+  customerPrice?: number;
   required: boolean; // e.g. CO Habitat Stamp auto-added
   appliesTo?: string[]; // license ids it applies to; omit = all
   description?: string;
@@ -115,6 +139,8 @@ export interface LicenseOption {
   id: string; // kebab-case
   name: string; // EXACT official license name
   price: number; // official price USD
+  /** EXACT customer-facing price. When set, markup is bypassed. */
+  customerPrice?: number;
   residency: "resident" | "nonresident" | "senior" | "youth" | "any";
   duration: string; // e.g. 'Annual', '1-Day', '10-Day', 'Lifetime'
   category: "freshwater" | "saltwater" | "all-water" | "combo" | "other";

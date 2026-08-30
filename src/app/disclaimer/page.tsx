@@ -32,6 +32,13 @@ const STATE_PORTALS = [
     agencyUrl: "https://www.michigan.gov/dnr",
   },
   {
+    state: "Pennsylvania",
+    agency: "Pennsylvania Fish and Boat Commission",
+    portalName: "HuntFishPA",
+    portalUrl: "https://huntfish.pa.gov/",
+    agencyUrl: "https://www.pa.gov/agencies/fishandboat",
+  },
+  {
     state: "California",
     agency: "California Department of Fish and Wildlife",
     portalName: "CDFW Online License Sales and Services",

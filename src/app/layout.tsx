@@ -20,11 +20,11 @@ const display = IBM_Plex_Serif({
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
   title: {
-    default: "ReelPermit — Michigan fishing licenses",
+    default: "ReelPermit — Michigan and Pennsylvania fishing licenses",
     template: "%s | ReelPermit",
   },
   description:
-    "Get a Michigan fishing license without fighting the MDNR portal. ReelPermit files it for you. You receive the official document by email.",
+    "ReelPermit files Michigan and Pennsylvania fishing licenses on the official state portals. You receive the official document by email.",
   openGraph: {
     type: "website",
     siteName: "ReelPermit",

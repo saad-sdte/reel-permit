@@ -19,7 +19,8 @@ export function Header() {
   const barePath = pathname === "/es" ? "/" : pathname.replace(/^\/es(?=\/|$)/, "") || "/";
 
   const navLinks = [
-    { href: "/how-it-works", label: "How it works" },
+    { href: "/apply", label: "Michigan" },
+    { href: "/pennsylvania", label: "Pennsylvania" },
     { href: "/faq", label: t("nav.faq") },
     { href: "/about", label: t("nav.about") },
     { href: "/contact", label: t("nav.contact") },

@@ -14,9 +14,10 @@ export function Footer() {
   }
 
   const links = [
-    { href: "/apply", label: "Apply" },
+    { href: "/apply", label: "Michigan application" },
+    { href: "/pennsylvania", label: "Pennsylvania application" },
     { href: "/how-it-works", label: "How it works" },
-    { href: "/official-sites", label: "Official MDNR portal" },
+    { href: "/official-sites", label: "Official state portals" },
     { href: "/faq", label: "FAQ" },
     { href: "/contact", label: "Contact" },
     { href: "/privacy", label: "Privacy" },
@@ -30,8 +31,9 @@ export function Footer() {
       <div className="container-site py-12">
         <Logo theme="white" />
         <p className="mt-3 max-w-xl text-sm text-white/70">
-          A private desk that files Michigan fishing licenses on the official MDNR portal.
-          You get the state-issued document — we handle the paperwork.
+          A private desk that files Michigan and Pennsylvania fishing licenses on
+          official state portals. You get the state-issued document — we handle the
+          paperwork.
         </p>
         <p className="mt-4 text-sm text-white/80">
           Support:{" "}
